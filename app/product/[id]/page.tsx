@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, Star, ShieldCheck, Truck, Sparkles } from 'lucide-react';
 import ProductActions from "@/components/ProductActions"; 
 
+export const dynamic = 'force-dynamic';
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 

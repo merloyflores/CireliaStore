@@ -4,6 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import SortSelector from "@/components/SortSelector";
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
 export default async function ShopPage({
   searchParams,
 }: {

@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Bars3Icon, XMarkIcon, ShoppingBagIcon, MagnifyingGlassIcon, HeartIcon } from '@heroicons/react/24/outline';
+import { 
+  Bars3Icon, 
+  XMarkIcon, 
+  ShoppingBagIcon, 
+  MagnifyingGlassIcon, 
+  HeartIcon,
+  Cog6ToothIcon // Icono elegante para la administración
+} from '@heroicons/react/24/outline';
 import { useCartStore } from '../app/store/useCartStore'; 
 
 const navLinks = [
@@ -85,6 +92,15 @@ export default function Navbar() {
                 </span>
               )}
             </Link>
+
+            {/* BOTÓN PANEL DE CONTROL (Escritorio) */}
+            <Link 
+              href="/admin/dashboard" 
+              className="hidden md:flex p-2.5 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-full transition-all"
+              title="Panel de Administración"
+            >
+              <Cog6ToothIcon className="w-5 h-5" />
+            </Link>
             
             {/* MENÚ MÓVIL TRIGGER */}
             <div className="md:hidden flex items-center ml-2">
@@ -100,7 +116,7 @@ export default function Navbar() {
       </div>
 
       {/* MENÚ MÓVIL DESPLEGABLE */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100 border-t border-zinc-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[450px] opacity-100 border-t border-zinc-100' : 'max-h-0 opacity-0'}`}>
         <div className="px-6 py-8 space-y-4 bg-white">
           {navLinks.map((link) => (
             <Link
@@ -112,12 +128,24 @@ export default function Navbar() {
               {link.name}
             </Link>
           ))}
-          <div className="pt-4">
+          
+          <div className="pt-4 space-y-3">
             <Link 
               href="/auth" 
-              className="block w-full bg-zinc-950 text-white py-4 rounded-2xl font-bold text-center shadow-lg active:scale-95 transition"
+              className="block w-full bg-zinc-100 text-zinc-900 py-4 rounded-2xl font-bold text-center active:scale-95 transition text-sm"
+              onClick={() => setIsOpen(false)}
             >
               Mi Cuenta
+            </Link>
+
+            {/* BOTÓN PANEL DE CONTROL (Móvil - Pensado para un acceso rápido y cómodo) */}
+            <Link 
+              href="/admin/dashboard" 
+              className="block w-full bg-zinc-950 text-white py-4 rounded-2xl font-black text-center shadow-md active:scale-95 transition text-sm flex items-center justify-center gap-2"
+              onClick={() => setIsOpen(false)}
+            >
+              <Cog6ToothIcon className="w-5 h-5 text-zinc-400" />
+              Panel Administrador
             </Link>
           </div>
         </div>

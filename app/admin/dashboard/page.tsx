@@ -9,11 +9,58 @@ import ChatHistoryView from '@/components/ChatHistoryView';
 import ProductFeedbackView from '@/components/ProductFeedbackView';
 
 const COLOR_MAP: Record<string, string> = {
-  'dorado': '#D4AF37', 'gold': '#D4AF37', 'negro': '#09090b', 'black': '#000000',
-  'blanco': '#ffffff', 'white': '#ffffff', 'plata': '#C0C0C0', 'plateado': '#E5E7EB',
-  'silver': '#C0C0C0', 'rojo': '#EF4444', 'red': '#EF4444', 'azul': '#3B82F6',
-  'blue': '#3B82F6', 'oro rosa': '#B76E79', 'rose gold': '#B76E79', 'rosado': '#F472B6',
-  'pink': '#F472B6', 'verde': '#22C55E', 'green': '#22C55E', 'gris': '#71717A', 'gray': '#71717A'
+  // --- TUS METÁLICOS Y VALIOSOS ---
+  'dorado': '#D4AF37', 'gold': '#D4AF37',
+  'plata': '#C0C0C0', 'plateado': '#E5E7EB', 'silver': '#C0C0C0',
+  'oro rosa': '#B76E79', 'rose gold': '#B76E79',
+  'bronce': '#CD7F32', 'bronze': '#CD7F32',
+  'cobre': '#B87333', 'copper': '#B87333',
+
+  // --- LOS MINIMALISTAS DE FÁBRICA ---
+  'crudo': '#FDFBF7', 'raw': '#FDFBF7',
+  'arena': '#E6D5C3', 'sand': '#E6D5C3',
+  'terracota': '#C86A4B', 'terracotta': '#C86A4B',
+  'oliva': '#707A5A', 'olive': '#707A5A',
+  'carbón': '#2C2C2C', 'charcoal': '#2C2C2C',
+
+  // --- MONOCROMÁTICOS Y NEUTROS PRO ---
+  'negro': '#09090b', 'black': '#000000',
+  'blanco': '#ffffff', 'white': '#ffffff',
+  'gris': '#71717A', 'gray': '#71717A', 'grey': '#71717A',
+  'grafito': '#3F3F46', 'graphite': '#3F3F46',
+  'crema': '#FFFDD0', 'cream': '#FFFDD0',
+  'marfil': '#FFFFF0', 'ivory': '#FFFFF0',
+  'beige': '#F5F5DC', 'taupe': '#483C32',
+
+  // --- TONOS VIVOS E INTENSOS ---
+  'rojo': '#EF4444', 'red': '#EF4444',
+  'azul': '#3B82F6', 'blue': '#3B82F6',
+  'verde': '#22C55E', 'green': '#22C55E',
+  'rosado': '#F472B6', 'pink': '#F472B6',
+  'naranja': '#F97316', 'orange': '#F97316',
+  'amarillo': '#EAB308', 'yellow': '#EAB308',
+  'púrpura': '#A855F7', 'purple': '#A855F7', 'morado': '#8B5CF6',
+
+  // --- PALETA CÁLIDA, MUEBLES Y TEXTILES ---
+  'marrón': '#78350F', 'brown': '#78350F', 'cafe': '#78350F', 'café': '#78350F',
+  'chocolate': '#451A03',
+  'mostaza': '#CA8A04', 'mustard': '#CA8A04',
+  'ocre': '#C68E17', 'ochre': '#C68E17',
+  'vino': '#7F1D1D', 'burgundy': '#7F1D1D', 'burdeos': '#7F1D1D',
+  'coral': '#F87171',
+  'salmón': '#FA8072', 'salmon': '#FA8072',
+  'fucsia': '#D946EF', 'fuchsia': '#D946EF',
+
+  // --- PALETA BOTÁNICA, NÓRDICA Y OCÉANO ---
+  'esmeralda': '#047857', 'emerald': '#047857',
+  'menta': '#A7F3D0', 'mint': '#A7F3D0',
+  'turquesa': '#06B6D4', 'turquoise': '#06B6D4',
+  'celeste': '#BAE6FD', 'sky blue': '#BAE6FD',
+  'marino': '#1E3A8A', 'navy': '#1E3A8A',
+  'azul marino': '#1E3A8A',
+  'índigo': '#4338CA', 'indigo': '#4338CA',
+  'lavanda': '#E9D5FF', 'lavender': '#E9D5FF',
+  'lila': '#F3E8FF', 'lilac': '#F3E8FF'
 };
 
 export default function AdminDashboard() {

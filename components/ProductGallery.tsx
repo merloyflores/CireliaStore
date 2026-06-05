@@ -70,7 +70,7 @@ export default function ProductGallery({ mainImage, productName, media }: Produc
 
       {/* CARRUSEL LATERAL/INFERIOR DE THUMBNAILS (Miniaturas) */}
       {allImages.length > 1 && (
-        <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto max-h-[500px] scrollbar-none py-1 shrink-0 px-2 md:px-0">
+        <div className="flex md:flex-col gap-3 overflow-x-auto md:overflow-y-auto max-h-125 scrollbar-none py-1 shrink-0 px-2 md:px-0">
           {allImages.map((img, index) => (
             <button
               key={index}

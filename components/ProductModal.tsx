@@ -11,7 +11,8 @@ import {
   Package, 
   Tag, 
   AlignLeft, 
-  Plus
+  Plus,
+  Palette
 } from 'lucide-react';
 import CategoryModal from './CategoryModal';
 import GalleryModal from './GalleryModal';
@@ -22,6 +23,61 @@ interface ProductModalProps {
   onSuccess: () => void;
   productToEdit: any | null;
 }
+
+const COLOR_MAP: Record<string, string> = {
+  // --- TUS METÁLICOS Y VALIOSOS ---
+  'dorado': '#D4AF37', 'gold': '#D4AF37',
+  'plata': '#C0C0C0', 'plateado': '#E5E7EB', 'silver': '#C0C0C0',
+  'oro rosa': '#B76E79', 'rose gold': '#B76E79',
+  'bronce': '#CD7F32', 'bronze': '#CD7F32',
+  'cobre': '#B87333', 'copper': '#B87333',
+
+  // --- LOS MINIMALISTAS DE FÁBRICA ---
+  'crudo': '#FDFBF7', 'raw': '#FDFBF7',
+  'arena': '#E6D5C3', 'sand': '#E6D5C3',
+  'terracota': '#C86A4B', 'terracotta': '#C86A4B',
+  'oliva': '#707A5A', 'olive': '#707A5A',
+  'carbón': '#2C2C2C', 'charcoal': '#2C2C2C',
+
+  // --- MONOCROMÁTICOS Y NEUTROS PRO ---
+  'negro': '#09090b', 'black': '#000000',
+  'blanco': '#ffffff', 'white': '#ffffff',
+  'gris': '#71717A', 'gray': '#71717A', 'grey': '#71717A',
+  'grafito': '#3F3F46', 'graphite': '#3F3F46',
+  'crema': '#FFFDD0', 'cream': '#FFFDD0',
+  'marfil': '#FFFFF0', 'ivory': '#FFFFF0',
+  'beige': '#F5F5DC', 'taupe': '#483C32',
+
+  // --- TONOS VIVOS E INTENSOS ---
+  'rojo': '#EF4444', 'red': '#EF4444',
+  'azul': '#3B82F6', 'blue': '#3B82F6',
+  'verde': '#22C55E', 'green': '#22C55E',
+  'rosado': '#F472B6', 'pink': '#F472B6',
+  'naranja': '#F97316', 'orange': '#F97316',
+  'amarillo': '#EAB308', 'yellow': '#EAB308',
+  'púrpura': '#A855F7', 'purple': '#A855F7', 'morado': '#8B5CF6',
+
+  // --- PALETA CÁLIDA, MUEBLES Y TEXTILES ---
+  'marrón': '#78350F', 'brown': '#78350F', 'cafe': '#78350F', 'café': '#78350F',
+  'chocolate': '#451A03',
+  'mostaza': '#CA8A04', 'mustard': '#CA8A04',
+  'ocre': '#C68E17', 'ochre': '#C68E17',
+  'vino': '#7F1D1D', 'burgundy': '#7F1D1D', 'burdeos': '#7F1D1D',
+  'coral': '#F87171',
+  'salmón': '#FA8072', 'salmon': '#FA8072',
+  'fucsia': '#D946EF', 'fuchsia': '#D946EF',
+
+  // --- PALETA BOTÁNICA, NÓRDICA Y OCÉANO ---
+  'esmeralda': '#047857', 'emerald': '#047857',
+  'menta': '#A7F3D0', 'mint': '#A7F3D0',
+  'turquesa': '#06B6D4', 'turquoise': '#06B6D4',
+  'celeste': '#BAE6FD', 'sky blue': '#BAE6FD',
+  'marino': '#1E3A8A', 'navy': '#1E3A8A',
+  'azul marino': '#1E3A8A',
+  'índigo': '#4338CA', 'indigo': '#4338CA',
+  'lavanda': '#E9D5FF', 'lavender': '#E9D5FF',
+  'lila': '#F3E8FF', 'lilac': '#F3E8FF'
+};
 
 export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit }: ProductModalProps) {
   const [submitting, setSubmitting] = useState(false);
@@ -36,6 +92,10 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
   const [categoryId, setCategoryId] = useState(''); 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState('');
+  
+  // --- NUEVOS ESTADOS PARA MANEJO DE COLORES ---
+  const [colors, setColors] = useState<string[]>([]);
+  const [colorInput, setColorInput] = useState('');
 
   const fetchCategories = async () => {
     const { data: catData } = await supabase.from('categories').select('id, name');
@@ -56,6 +116,22 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
           setStock(productToEdit.stock?.toString() || '10');
           setCategoryId(productToEdit.category_id || ''); 
           setCurrentImageUrl(productToEdit.image_url || '');
+          
+          // Mapeo seguro de colores de la base de datos (Soporta Array o String separado por comas)
+          if (productToEdit.colors) {
+            if (Array.isArray(productToEdit.colors)) {
+              setColors(productToEdit.colors);
+            } else if (typeof productToEdit.colors === 'string') {
+              try {
+                const parsed = JSON.parse(productToEdit.colors);
+                setColors(Array.isArray(parsed) ? parsed : [productToEdit.colors]);
+              } catch {
+                setColors(productToEdit.colors.split(',').map((c: string) => c.trim()).filter(Boolean));
+              }
+            }
+          } else {
+            setColors([]);
+          }
         } else {
           setName('');
           setPrice('');
@@ -63,14 +139,29 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
           setStock('10');
           setCategoryId('');
           setCurrentImageUrl('');
+          setColors([]);
         }
         setImageFile(null);
+        setColorInput('');
       }
     }
     loadInitialData();
   }, [isOpen, productToEdit]);
 
   if (!isOpen) return null;
+
+  // Funciones auxiliares para añadir y quitar colores del estado
+  const handleAddColor = (colorStr: string) => {
+    const trimmed = colorStr.trim();
+    if (trimmed && !colors.includes(trimmed)) {
+      setColors([...colors, trimmed]);
+      setColorInput('');
+    }
+  };
+
+  const handleRemoveColor = (indexToRemove: number) => {
+    setColors(colors.filter((_, i) => i !== indexToRemove));
+  };
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
@@ -104,13 +195,13 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
         description,
         stock: parseInt(stock),
         category_id: categoryId || null, 
-        image_url: finalImageUrl
+        image_url: finalImageUrl,
+        colors: colors // <-- AÑADIDO: Guardando el array de colores en tu columna de Supabase
       };
 
       let productId = productToEdit?.id;
 
       if (productToEdit) {
-        // Actualizar producto
         const { error } = await supabase
           .from('products')
           .update(productData)
@@ -118,7 +209,6 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
         
         if (error) throw error;
       } else {
-        // Insertar nuevo producto y obtener el ID
         const { data, error } = await supabase
           .from('products')
           .insert([productData])
@@ -129,8 +219,6 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
         productId = data.id;
       }
 
-      // --- AÑADIDO PARA PRODUCT_MEDIA ---
-      // Si tenemos una URL de imagen, la guardamos en la nueva tabla
       if (finalImageUrl) {
         const { error: mediaError } = await supabase
           .from('product_media')
@@ -159,7 +247,8 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
       className="fixed top-0 left-0 w-screen h-screen bg-zinc-950/70 backdrop-blur-md z-99999 flex items-center justify-center p-4 sm:p-6"
       style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
     >
-      <div className="bg-white w-full max-w-lg rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-zinc-100 p-6 sm:p-8 relative animate-in zoom-in-95 fade-in duration-300 max-h-[95vh] overflow-y-auto custom-scrollbar">
+      {/* CAMBIADO: Ajustado el max-w-lg a max-w-2xl para soportar la distribución estética de dos columnas */}
+      <div className="bg-white w-full max-w-2xl rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-zinc-100 p-6 sm:p-8 relative animate-in zoom-in-95 fade-in duration-300 max-h-[95vh] overflow-y-auto custom-scrollbar">
         
         <button 
           onClick={onClose}
@@ -169,7 +258,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
           <X size={20} strokeWidth={2.5} />
         </button>
 
-        <div className="mb-8">
+        <div className="mb-6">
           <h2 className="text-2xl font-black text-zinc-950 tracking-tight">
             {productToEdit ? 'Editar Producto' : 'Nuevo Producto'}
           </h2>
@@ -178,135 +267,254 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           
-          <div>
-            <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Nombre del Producto</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <Type className="h-4 w-4 text-zinc-400" />
-              </div>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="Ej. Cojín Decorativo Boho" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Precio (₡)</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <DollarSign className="h-4 w-4 text-zinc-400" />
-                </div>
-                <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="18000" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Stock</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Package className="h-4 w-4 text-zinc-400" />
-                </div>
-                <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="10" />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Categoría</label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Tag className="h-4 w-4 text-zinc-400" />
-                </div>
-                <select 
-                  value={categoryId} 
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm appearance-none"
-                >
-                  <option value="">Selecciona una categoría</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => setIsCategoryModalOpen(true)}
-                className="h-12 w-12 flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 rounded-xl text-zinc-600 transition-all"
-              >
-                <Plus size={20} />
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Descripción</label>
-            <div className="relative">
-              <div className="absolute top-4 left-0 pl-4 pointer-events-none">
-                <AlignLeft className="h-4 w-4 text-zinc-400" />
-              </div>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 py-3.5 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm resize-none" placeholder="Detalles del producto, materiales, medidas..."></textarea>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-          {/* Sección: Fotografía Principal */}
-          <div>
-            <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">
-              Fotografía del Producto
-            </label>
+          {/* DISTRIBUCIÓN GRID EN ESCRITORIO: 2 Columnas Balanceadas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             
-            <div className="flex items-center gap-4 p-3 bg-white border border-zinc-200 rounded-2xl shadow-sm">
-              <div className="w-16 h-16 rounded-xl bg-zinc-50 border border-zinc-200 overflow-hidden flex items-center justify-center text-zinc-400 shrink-0">
-                {imageFile ? (
-                  <img src={URL.createObjectURL(imageFile)} alt="Preview" className="w-full h-full object-cover" />
-                ) : currentImageUrl ? (
-                  <img src={currentImageUrl} alt="Current" className="w-full h-full object-cover" />
-                ) : (
-                  <ImageIcon size={24} strokeWidth={1.5} />
+            {/* COLUMNA IZQUIERDA: Identidad e Inventario */}
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Nombre del Producto</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Type className="h-4 w-4 text-zinc-400" />
+                  </div>
+                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="Ej. Cojín Decorativo Boho" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Precio (₡)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <DollarSign className="h-4 w-4 text-zinc-400" />
+                    </div>
+                    <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="18000" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Stock</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Package className="h-4 w-4 text-zinc-400" />
+                    </div>
+                    <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="10" />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Categoría</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Tag className="h-4 w-4 text-zinc-400" />
+                    </div>
+                    <select 
+                      value={categoryId} 
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm appearance-none"
+                    >
+                      <option value="">Selecciona una categoría</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsCategoryModalOpen(true)}
+                    className="h-12 w-12 flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 rounded-xl text-zinc-600 transition-all"
+                  >
+                    <Plus size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* SECCIÓN NUEVA: Panel de Selección Estética de Colores */}
+              <div>
+                <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Variantes de Color</label>
+                <div className="p-4 bg-zinc-50/50 border border-zinc-200 rounded-2xl space-y-3">
+                  
+                  {/* Selector / Input manual */}
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <Palette className="h-4 w-4 text-zinc-400" />
+                      </div>
+                      <input 
+                        type="text"
+                        value={colorInput}
+                        onChange={(e) => setColorInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddColor(colorInput);
+                          }
+                        }}
+                        className="w-full h-10 bg-white border border-zinc-200 rounded-xl pl-10 pr-3 font-medium focus:outline-none focus:border-sky-500 text-xs" 
+                        placeholder="Ej. Terracota, Arena, #E2725B..." 
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleAddColor(colorInput)}
+                      className="h-10 px-3 bg-zinc-950 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition-all active:scale-95"
+                    >
+                      Añadir
+                    </button>
+                  </div>
+
+                  {/* Sugerencias rápidas estéticas (Con contenedor scrollable sutil y elegante) */}
+                  <div className="space-y-1.5">
+                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider block">
+                      Paleta Base Disponible:
+                    </span>
+                    
+                    {/* CONTENEDOR CON SCROLL SUTIL: Altura controlada y scrollbar fina */}
+                    <div className="max-h-27.5 overflow-y-auto pr-1 flex flex-wrap gap-1.5 items-start scrollbar-thin scrollbar-thumb-zinc-200 scrollbar-track-transparent">
+                      {(() => {
+                        // 1. Filtramos el mapa para quedarnos solo con un nombre único por cada código HEX
+                        const vistasUnicas: string[] = [];
+                        const coloresFiltrados = Object.keys(COLOR_MAP).filter((name) => {
+                          const hex = COLOR_MAP[name];
+                          if (!vistasUnicas.includes(hex)) {
+                            vistasUnicas.push(hex);
+                            return true;
+                          }
+                          return false;
+                        });
+
+                        // 2. Mapeamos toda la variedad de colores de tu tabla
+                        return coloresFiltrados.map((colorKey) => {
+                          const hexColor = COLOR_MAP[colorKey];
+                          
+                          return (
+                            <button
+                              key={colorKey}
+                              type="button"
+                              onClick={() => handleAddColor(colorKey)}
+                              className="text-[10px] font-semibold text-zinc-600 bg-white border border-zinc-200 px-2 py-1 rounded-lg hover:border-zinc-400 transition-all flex items-center gap-1.5 shadow-xs capitalize cursor-pointer active:scale-95"
+                            >
+                              <span 
+                                className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" 
+                                style={{ backgroundColor: hexColor }} 
+                              />
+                              {colorKey}
+                            </button>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Contenedor de Chips Seleccionados */}
+                  {colors.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-zinc-200/60">
+                      {colors.map((color, index) => {
+                        const isHex = color.startsWith('#');
+                        return (
+                          <div 
+                            key={index}
+                            className="flex items-center gap-1.5 bg-white border border-zinc-200 pl-2 pr-1 py-1 rounded-lg text-[11px] font-bold text-zinc-800 shadow-xs animate-in zoom-in-95 duration-150"
+                          >
+                            <span 
+                              className="w-2.5 h-2.5 rounded-full border border-black/10 shrink-0" 
+                              style={{ backgroundColor: isHex ? color : '#E4E4E7' }} 
+                            />
+                            <span>{color}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveColor(index)}
+                              className="p-0.5 hover:bg-zinc-100 rounded text-zinc-400 hover:text-zinc-950 transition-colors"
+                            >
+                              <X size={12} strokeWidth={2.5} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-zinc-400 italic pt-1 text-center">Sin variantes de color especificadas.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* COLUMNA DERECHA: Descripción y Multimedia */}
+            <div className="space-y-5">
+              <div>
+                <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Descripción</label>
+                <div className="relative">
+                  <div className="absolute top-4 left-0 pl-4 pointer-events-none">
+                    <AlignLeft className="h-4 w-4 text-zinc-400" />
+                  </div>
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 py-3.5 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm resize-none" placeholder="Detalles del producto, materiales, medidas..."></textarea>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">
+                    Fotografía del Producto
+                  </label>
+                  
+                  <div className="flex items-center gap-4 p-3 bg-white border border-zinc-200 rounded-2xl shadow-sm">
+                    <div className="w-16 h-16 rounded-xl bg-zinc-50 border border-zinc-200 overflow-hidden flex items-center justify-center text-zinc-400 shrink-0">
+                      {imageFile ? (
+                        <img src={URL.createObjectURL(imageFile)} alt="Preview" className="w-full h-full object-cover" />
+                      ) : currentImageUrl ? (
+                        <img src={currentImageUrl} alt="Current" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon size={24} strokeWidth={1.5} />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <input 
+                        type="file" 
+                        id="product-image-upload"
+                        title="Seleccionar imagen principal del producto"
+                        accept="image/*" 
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
+                        }}
+                        className="block w-full text-xs text-zinc-500
+                          file:mr-4 file:py-2 file:px-4
+                          file:rounded-lg file:border-0
+                          file:text-[10px] file:font-bold
+                          file:bg-zinc-950 file:text-white
+                          hover:file:bg-zinc-800 file:cursor-pointer
+                          cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {productToEdit && (
+                  <div className="pt-1">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsGalleryOpen(true)}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl font-bold text-xs hover:bg-sky-100 transition-all active:scale-[0.98]"
+                    >
+                      <ImageIcon size={16} />
+                      Gestionar galería de fotos
+                    </button>
+                    <p className="text-[10px] text-zinc-400 text-center mt-2">
+                      Añade más fotos para mostrar diferentes ángulos del producto.
+                    </p>
+                  </div>
                 )}
               </div>
-              
-              <div className="flex-1">
-                <input 
-                  type="file" 
-                  id="product-image-upload"
-                  title="Seleccionar imagen principal del producto"
-                  accept="image/*" 
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
-                  }}
-                  className="block w-full text-xs text-zinc-500
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-[10px] file:font-bold
-                    file:bg-zinc-950 file:text-white
-                    hover:file:bg-zinc-800 file:cursor-pointer
-                    cursor-pointer"
-                />
-              </div>
             </div>
+
           </div>
 
-          {/* Sección: Galería (Separada y destacada) */}
-          {productToEdit && (
-            <div className="pt-2">
-              <button 
-                type="button" 
-                onClick={() => setIsGalleryOpen(true)}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl font-bold text-xs hover:bg-sky-100 transition-all active:scale-[0.98]"
-              >
-                <ImageIcon size={16} />
-                Gestionar galería de fotos
-              </button>
-              <p className="text-[10px] text-zinc-400 text-center mt-2">
-                Añade más fotos para mostrar diferentes ángulos del producto.
-              </p>
-            </div>
-          )}
-        </div>
-
+          {/* ACCIONES DEL FORMULARIO */}
           <div className="flex gap-3 pt-6 mt-2 border-t border-zinc-100">
             <button 
               type="button" 
@@ -328,19 +536,20 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
             </button>
           </div>
         </form>
+
         <CategoryModal 
           isOpen={isCategoryModalOpen} 
           onClose={() => setIsCategoryModalOpen(false)} 
           onSuccess={() => {
-            fetchCategories(); // Refresca el select
+            fetchCategories(); 
             setIsCategoryModalOpen(false);
           }}
         />
         <GalleryModal 
-        isOpen={isGalleryOpen}
-        onClose={() => setIsGalleryOpen(false)}
-        onSuccess={() => alert('¡Fotos subidas con éxito!')}
-        productId={productToEdit?.id}
+          isOpen={isGalleryOpen}
+          onClose={() => setIsGalleryOpen(false)}
+          onSuccess={() => alert('¡Fotos subidas con éxito!')}
+          productId={productToEdit?.id}
         />
       </div>
     </div>

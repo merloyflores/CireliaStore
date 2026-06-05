@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-// 1. Importamos los componentes
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import WhatsAppWidget from "@/components/WhatsAppWidget"; 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,28 +15,21 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Cirelia Store | Hogar Premium+",
-  description: "Tienda digital de productos exclusivos para el hogar.",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-zinc-950`}>
-        {/* 2. Colocamos el Navbar arriba */}
+    <html lang="es" className="scroll-smooth">
+      <body className="min-h-dvh flex flex-col">
         <Navbar />
         
-        {/* 3. Aseguramos que el contenido ocupe el alto mínimo para que el footer no flote */}
-        <main className="min-h-screen">
+        {/* Usamos un contenedor principal con 'relative' */}
+        <main className="relative grow">
           {children}
+          
+          {/* Mueve el widget DENTRO del main, al final, 
+              para que el 'sticky' sepa cuándo detenerse al llegar al footer */}
+          <WhatsAppWidget />
         </main>
         
-        {/* 4. Colocamos el Footer abajo */}
         <Footer />
       </body>
     </html>

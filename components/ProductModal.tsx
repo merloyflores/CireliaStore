@@ -250,10 +250,15 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
             </div>
           </div>
 
+          <div className="space-y-4">
+          {/* Sección: Fotografía Principal */}
           <div>
-            <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Fotografía del Producto</label>
-            <div className="relative flex items-center gap-4 p-3 bg-zinc-50/50 border border-zinc-200 border-dashed rounded-2xl hover:bg-zinc-50 transition-all">
-              <div className="w-16 h-16 rounded-xl bg-white border border-zinc-200 overflow-hidden flex items-center justify-center text-zinc-400 shrink-0 shadow-sm">
+            <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">
+              Fotografía del Producto
+            </label>
+            
+            <div className="flex items-center gap-4 p-3 bg-white border border-zinc-200 rounded-2xl shadow-sm">
+              <div className="w-16 h-16 rounded-xl bg-zinc-50 border border-zinc-200 overflow-hidden flex items-center justify-center text-zinc-400 shrink-0">
                 {imageFile ? (
                   <img src={URL.createObjectURL(imageFile)} alt="Preview" className="w-full h-full object-cover" />
                 ) : currentImageUrl ? (
@@ -262,29 +267,45 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                   <ImageIcon size={24} strokeWidth={1.5} />
                 )}
               </div>
+              
               <div className="flex-1">
                 <input 
                   type="file" 
+                  id="product-image-upload"
+                  title="Seleccionar imagen principal del producto"
                   accept="image/*" 
                   onChange={(e) => {
                     if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
                   }}
-                  title="Seleccionar imagen del producto"
-                  placeholder="Seleccionar archivo"
-                  className="text-xs text-zinc-500 file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-zinc-950 file:text-white hover:file:bg-zinc-800 file:cursor-pointer cursor-pointer w-full transition-all file:shadow-md"
+                  className="block w-full text-xs text-zinc-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-lg file:border-0
+                    file:text-[10px] file:font-bold
+                    file:bg-zinc-950 file:text-white
+                    hover:file:bg-zinc-800 file:cursor-pointer
+                    cursor-pointer"
                 />
               </div>
-              {productToEdit && (
-                <button 
-                    type="button" 
-                    onClick={() => setIsGalleryOpen(true)}
-                    className="mt-4 text-xs font-bold text-sky-600 hover:text-sky-700 underline"
-                >
-                    + Añadir más fotos a la galería
-                </button>
-                )}
             </div>
           </div>
+
+          {/* Sección: Galería (Separada y destacada) */}
+          {productToEdit && (
+            <div className="pt-2">
+              <button 
+                type="button" 
+                onClick={() => setIsGalleryOpen(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-sky-50 border border-sky-100 text-sky-700 rounded-xl font-bold text-xs hover:bg-sky-100 transition-all active:scale-[0.98]"
+              >
+                <ImageIcon size={16} />
+                Gestionar galería de fotos
+              </button>
+              <p className="text-[10px] text-zinc-400 text-center mt-2">
+                Añade más fotos para mostrar diferentes ángulos del producto.
+              </p>
+            </div>
+          )}
+        </div>
 
           <div className="flex gap-3 pt-6 mt-2 border-t border-zinc-100">
             <button 

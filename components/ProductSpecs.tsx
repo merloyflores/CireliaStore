@@ -10,6 +10,7 @@ interface ProductSpecsProps {
   weight?: string | null;
   warrantyDays?: number;
   relatedTags?: string[] | null;
+  specifications?: Record<string, string> | null; // Nuevo campo JSONB
 }
 
 export default function ProductSpecs({
@@ -21,83 +22,70 @@ export default function ProductSpecs({
   sku,
   weight,
   warrantyDays = 30,
-  relatedTags
+  relatedTags,
+  specifications
 }: ProductSpecsProps) {
+  
+  // Componente interno para mantener el código limpio (DRY)
+  const SpecRow = ({ label, value, isMonospace = false }: { label: string; value: React.ReactNode; isMonospace?: boolean }) => (
+    <div className="flex justify-between py-3 border-b border-zinc-100 last:border-0">
+      <span className="text-zinc-500 text-sm font-medium">{label}</span>
+      <span className={`text-zinc-900 text-sm font-semibold ${isMonospace ? 'font-mono' : ''}`}>
+        {value}
+      </span>
+    </div>
+  );
+
   return (
-    <div className="mt-20 border-t border-zinc-100 pt-16 space-y-16">
-      {/* 1. DESCRIPCIÓN */}
-      <div>
-        <h3 className="text-xl font-black text-zinc-950 mb-4 tracking-tight">Descripción</h3>
-        <p className="text-zinc-600 leading-relaxed max-w-4xl text-sm font-medium whitespace-pre-line">
-          {description || "No hay descripción adicional disponible para este producto."}
+    <div className="space-y-16">
+      
+      {/* 1. DESCRIPCIÓN (Ocupa todo el ancho por legibilidad) */}
+      <div className="max-w-3xl">
+        <h3 className="text-lg font-black text-zinc-950 mb-4 tracking-tight">Detalles del producto</h3>
+        <p className="text-zinc-600 leading-relaxed text-sm font-medium whitespace-pre-line">
+          {description || "No hay descripción adicional disponible."}
         </p>
       </div>
 
-      {/* 2. CARACTERÍSTICAS TÉCNICAS (Solo si existen datos) */}
-      {(material || dimensions) && (
-        <div>
-          <h3 className="text-sm font-black text-zinc-400 uppercase tracking-widest mb-6">Características</h3>
-          <div className="border border-zinc-100 rounded-2xl overflow-hidden max-w-2xl bg-zinc-50/50">
-            <div className="grid grid-cols-3 border-b border-zinc-100 p-4 text-sm">
-              <span className="font-bold text-zinc-400">Marca</span>
-              <span className="col-span-2 font-semibold text-zinc-800">{brand}</span>
-            </div>
-            {material && (
-              <div className="grid grid-cols-3 border-b border-zinc-100 p-4 text-sm">
-                <span className="font-bold text-zinc-400">Material</span>
-                <span className="col-span-2 font-semibold text-zinc-800">{material}</span>
-              </div>
-            )}
-            {dimensions && (
-              <div className="grid grid-cols-3 p-4 text-sm">
-                <span className="font-bold text-zinc-400">Dimensiones</span>
-                <span className="col-span-2 font-semibold text-zinc-800">{dimensions}</span>
-              </div>
-            )}
+      {/* 2. GRID DE ESPECIFICACIONES (El corazón profesional) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+        
+        {/* COLUMNA 1: Datos Técnicos */}
+        <div className="bg-zinc-50/50 p-6 rounded-2xl border border-zinc-100 h-fit">
+          <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Especificaciones</h4>
+          <div className="flex flex-col">
+            <SpecRow label="Marca" value={brand} />
+            {material && <SpecRow label="Material" value={material} />}
+            {dimensions && <SpecRow label="Dimensiones" value={dimensions} />}
+            {weight && <SpecRow label="Peso" value={weight} />}
+            {sku && <SpecRow label="SKU" value={sku} isMonospace />}
+            {specifications && Object.entries(specifications).map(([key, value]) => (
+      <SpecRow key={key} label={key} value={value} />
+    ))}
           </div>
         </div>
-      )}
 
-      {/* 3. EN LA CAJA */}
-      {inTheBox && (
-        <div>
-          <h3 className="text-xl font-black text-zinc-950 mb-4 tracking-tight">En la Caja</h3>
-          <ul className="list-disc list-inside text-zinc-600 text-sm font-medium space-y-1">
-            <li>{inTheBox}</li>
-          </ul>
-        </div>
-      )}
-
-      {/* 4. GARANTÍA Y OTROS */}
-      <div>
-        <h3 className="text-sm font-black text-zinc-400 uppercase tracking-widest mb-6">Garantía & Otros</h3>
-        <div className="border border-zinc-100 rounded-2xl overflow-hidden max-w-2xl bg-zinc-50/50">
-          <div className="grid grid-cols-3 border-b border-zinc-100 p-4 text-sm">
-            <span className="font-bold text-zinc-400">Garantía</span>
-            <span className="col-span-2 font-semibold text-zinc-800">{warrantyDays} días por defectos de fábrica</span>
-          </div>
-          {weight && (
-            <div className="grid grid-cols-3 border-b border-zinc-100 p-4 text-sm">
-              <span className="font-bold text-zinc-400">Peso</span>
-              <span className="col-span-2 font-semibold text-zinc-800">{weight}</span>
+        {/* COLUMNA 2: Garantía y Contenido */}
+        <div className="space-y-8">
+            <div className="bg-zinc-50/50 p-6 rounded-2xl border border-zinc-100">
+                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Protección y Envío</h4>
+                <SpecRow label="Garantía" value={`${warrantyDays} días`} />
+                {inTheBox && (
+                    <div className="mt-4 pt-4 border-t border-zinc-100">
+                        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Incluye en la caja</p>
+                        <p className="text-sm text-zinc-700 leading-relaxed">{inTheBox}</p>
+                    </div>
+                )}
             </div>
-          )}
-          {sku && (
-            <div className="grid grid-cols-3 p-4 text-sm">
-              <span className="font-bold text-zinc-400">SKU</span>
-              <span className="col-span-2 font-mono text-xs font-bold text-zinc-600">{sku}</span>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* 5. ETIQUETAS RELACIONADAS */}
+      {/* 3. ETIQUETAS (Estilo tag moderno) */}
       {relatedTags && relatedTags.length > 0 && (
-        <div>
-          <h3 className="text-sm font-black text-zinc-400 uppercase tracking-widest mb-6">Etiquetas</h3>
+        <div className="pt-8 border-t border-zinc-100">
           <div className="flex flex-wrap gap-2">
             {relatedTags.map((tag) => (
-              <span key={tag} className="px-4 py-2 bg-zinc-50 border border-zinc-100 rounded-full text-xs font-bold text-zinc-600">
+              <span key={tag} className="px-3 py-1 bg-white border border-zinc-200 rounded-md text-[10px] font-bold text-zinc-500 hover:text-sky-600 hover:border-sky-200 transition-colors cursor-pointer">
                 #{tag}
               </span>
             ))}

@@ -288,10 +288,18 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                 <div>
                   <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Precio (₡)</label>
                   <div className="relative">
+                    {/* REEMPLAZADO: Quitamos el DollarSign y metemos el Colón Tico estilizado */}
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <DollarSign className="h-4 w-4 text-zinc-400" />
+                      <span className="text-sm font-black text-zinc-400 select-none">₡</span>
                     </div>
-                    <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="18000" />
+                    <input 
+                      type="number" 
+                      value={price} 
+                      onChange={(e) => setPrice(e.target.value)} 
+                      required 
+                      className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" 
+                      placeholder="18000" 
+                    />
                   </div>
                 </div>
 

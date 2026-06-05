@@ -2,22 +2,33 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Eye, EyeOff } from 'lucide-react'; // Importamos Eye y EyeOff
+// Importamos Loader2 para la animación de carga
+import { Lock, Eye, EyeOff, Loader2 } from 'lucide-react'; 
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // Estado para el "ojito"
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  // NUEVO: Estado para controlar cuándo el botón está procesando
+  const [isLoading, setIsLoading] = useState(false); 
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (username === 'admin' && password === 'Magoos@12') {
+    setError(''); // Limpiamos cualquier error previo
+    setIsLoading(true); // Activamos la animación de carga en el botón
+
+    // Simulamos un pequeñísimo retraso (0.5s) para que la UI se sienta natural y el botón "reaccione"
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Usamos .trim() en el usuario por si se coló un espacio en blanco al final
+    if (username.trim() === 'admin' && password === 'Magoos@12') {
       document.cookie = "admin_token=autenticado; path=/; max-age=86400";
       router.push('/admin/dashboard');
     } else {
       setError('Credenciales incorrectas. Acceso denegado.');
+      setIsLoading(false); // Desactivamos la carga para que puedan volver a intentar
     }
   };
 
@@ -25,7 +36,7 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-[0_20px_50px_-15px_rgba(0,0,0,0.1)] border border-zinc-100 p-8 sm:p-10">
         
-        {/* Header con un diseño más premium */}
+        {/* Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 bg-zinc-950 text-white rounded-2xl flex items-center justify-center shadow-lg mb-4">
             <Lock size={28} />
@@ -42,7 +53,8 @@ export default function AdminLoginPage() {
               type="text" 
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-semibold text-sm focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all"
+              disabled={isLoading}
+              className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-semibold text-sm focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               placeholder="admin"
               required
             />
@@ -56,14 +68,16 @@ export default function AdminLoginPage() {
                 type={showPassword ? "text" : "password"} 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 pr-12 font-semibold text-sm focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all"
+                disabled={isLoading}
+                className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 pr-12 font-semibold text-sm focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 placeholder="••••••••"
                 required
               />
               <button 
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-zinc-400 hover:text-zinc-600 transition-colors"
+                disabled={isLoading}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-zinc-400 hover:text-zinc-600 transition-colors disabled:opacity-50"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -79,12 +93,20 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          {/* Botón con efecto de presionado */}
+          {/* Botón dinámico con estado de carga */}
           <button 
             type="submit"
-            className="w-full h-12 bg-zinc-950 text-white rounded-xl font-bold text-sm hover:bg-zinc-800 active:scale-[0.98] transition-all shadow-lg shadow-zinc-950/20"
+            disabled={isLoading}
+            className="w-full h-12 bg-zinc-950 text-white rounded-xl font-bold text-sm hover:bg-zinc-800 active:scale-[0.98] transition-all shadow-lg shadow-zinc-950/20 flex items-center justify-center gap-2 disabled:opacity-80 disabled:cursor-not-allowed"
           >
-            Ingresar al panel
+            {isLoading ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Verificando...
+              </>
+            ) : (
+              'Ingresar al panel'
+            )}
           </button>
         </form>
       </div>

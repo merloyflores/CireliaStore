@@ -242,7 +242,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-zinc-50 p-6 sm:p-10 text-zinc-950">
       
       {/* HEADER DEL DASHBOARD */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-10 pb-6 border-b border-b-zinc-200">
+      <div className="flex flex-row max-[1024px]:flex-col justify-between items-center max-[1024px]:items-start gap-4 mb-10 pb-6 border-b border-b-zinc-200">
         <div>
           <h1 className="text-3xl font-black tracking-tight">Panel de Control</h1>
           <p className="text-zinc-500 text-sm font-medium">Gestiona el inventario oficial de Cirelia Store</p>
@@ -355,11 +355,11 @@ export default function AdminDashboard() {
                       />
                     </th>
                     <th className="py-4 px-6">Producto</th>
-                    <th className="py-4 px-6">Categoría</th>
-                    <th className="py-4 px-6 hidden lg:table-cell">Variantes de Color</th>
-                    <th className="py-4 px-6">Precio</th>
-                    <th className="py-4 px-6">Stock</th>
-                    <th className="py-4 px-6 text-right">Acciones</th>
+                    <th className="py-4 px-6 max-[942px]:hidden">Categoría</th>
+                    <th className="py-4 px-6 max-[820px]:hidden">Variantes de Color</th>
+                    <th className="py-4 px-6 max-[724px]:hidden">Precio</th>
+                    <th className="py-4 px-6 max-[590px]:hidden">Stock</th>
+                    <th className="py-4 px-6 text-right max-[468px]:px-2">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 text-sm font-medium">
@@ -381,15 +381,18 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <p className="font-bold text-zinc-950">{product.name}</p>
-                          <p className="text-xs text-zinc-400 line-clamp-1 max-w-xs">{product.description}</p>
+                          <div 
+                            className="text-xs text-zinc-400 line-clamp-1 max-w-xs prose prose-sm [&_*]:inline [&_*]:m-0"
+                            dangerouslySetInnerHTML={{ __html: product.description }} 
+                          />
                         </div>
                       </td>
                       
-                      <td className="py-4 px-6 text-zinc-500 capitalize">
+                      <td className="py-4 px-6 text-zinc-500 capitalize max-[942px]:hidden">
                         {product.categories?.name || '-'}
                       </td>
 
-                      <td className="py-4 px-6 hidden lg:table-cell">
+                      <td className="py-4 px-6 max-[820px]:hidden">
                         {product.colors && product.colors.length > 0 ? (
                           <div className="flex items-center gap-1.5">
                             {/* APLICADO ORDEN ALFABÉTICO EN LOS COLORES ANTES DE MAPEAR */}
@@ -413,34 +416,46 @@ export default function AdminDashboard() {
                         )}
                       </td>
 
-                      <td className="py-4 px-6 font-bold text-zinc-950">₡{product.price?.toLocaleString()}</td>
+                      <td className="py-4 px-6 font-bold text-zinc-950 max-[724px]:hidden">₡{product.price?.toLocaleString()}</td>
                       
-                      <td className="py-4 px-6">
+                      <td className="py-4 px-6 max-[590px]:hidden">
                         <span className={`px-2.5 py-1 rounded-md text-xs font-black ${product.stock > 5 ? 'bg-zinc-100 text-zinc-700' : 'bg-red-50 text-red-600'}`}>
                           {product.stock} unids
                         </span>
                       </td>
                       
-                      <td className="py-4 px-6 text-right">
-                        <div className="flex justify-end gap-2">
-                          {/* NUEVO BOTÓN PARA ESPECIFICACIONES */}
+                      <td className="py-4 px-6 text-right max-[468px]:px-2">
+                        {/* El contenedor ahora se convierte en una mini tarjeta gris unificada en móvil */}
+                        <div className="flex justify-end max-[468px]:grid max-[468px]:grid-cols-2 max-[468px]:w-full max-[468px]:bg-zinc-100/80 max-[468px]:p-1.5 max-[468px]:rounded-xl max-[468px]:justify-items-stretch gap-1.5">
+                          
+                          {/* BOTÓN ESPECIFICACIONES */}
                           <button 
                             onClick={() => {
                               setProductToEditSpecs(product);
                               setIsSpecsModalOpen(true);
                             }}
-                            className="p-2 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-all"
+                            className="p-2 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-all flex items-center justify-center max-[468px]:bg-white max-[468px]:text-zinc-600 max-[468px]:shadow-sm max-[468px]:h-9"
                             title="Editar especificaciones"
                           >
                             <Settings2 size={16} />
                           </button>
 
-                          <button onClick={() => openModal(product)} className="p-2 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition-all">
+                          {/* BOTÓN EDITAR */}
+                          <button 
+                            onClick={() => openModal(product)} 
+                            className="p-2 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition-all flex items-center justify-center max-[468px]:bg-white max-[468px]:text-zinc-600 max-[468px]:shadow-sm max-[468px]:h-9"
+                          >
                             <Edit3 size={16} />
                           </button>
-                          <button onClick={() => handleDelete(product)} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                          
+                          {/* BOTÓN ELIMINAR (Ocupa las 2 columnas abajo para cerrar el diseño simétricamente) */}
+                          <button 
+                            onClick={() => handleDelete(product)} 
+                            className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all flex items-center justify-center max-[468px]:bg-white max-[468px]:text-red-500 max-[468px]:shadow-sm max-[468px]:h-9 max-[468px]:col-span-2"
+                          >
                             <Trash2 size={16} />
                           </button>
+
                         </div>
                       </td>
                     </tr>

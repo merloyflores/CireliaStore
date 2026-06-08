@@ -18,19 +18,21 @@ const geistMono = Geist_Mono({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className="scroll-smooth">
-      <body className="min-h-dvh flex flex-col">
-        <Navbar />
+      <body className="min-h-dvh flex flex-col relative">
+        {/* El Navbar debe tener un z-index alto para estar encima de todo */}
+        <div className="sticky top-0 z-50">
+          <Navbar />
+        </div>
         
-        {/* Usamos un contenedor principal con 'relative' */}
         <main className="relative grow">
           {children}
-          
-          {/* Mueve el widget DENTRO del main, al final, 
-              para que el 'sticky' sepa cuándo detenerse al llegar al footer */}
           <WhatsAppWidget />
         </main>
         
-        <Footer />
+        {/* El Footer también debe tener un z-index alto */}
+        <div className="relative z-50">
+          <Footer />
+        </div>
       </body>
     </html>
   );

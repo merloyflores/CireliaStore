@@ -1,7 +1,9 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+
 import { 
   Image as ImageIcon, 
   Loader2, 
@@ -12,10 +14,11 @@ import {
   Tag, 
   AlignLeft, 
   Plus,
-  Palette
+  Palette, Bold, Italic, List, ListOrdered, Underline as UnderlineIcon
 } from 'lucide-react';
 import CategoryModal from './CategoryModal';
 import GalleryModal from './GalleryModal';
+import Underline from '@tiptap/extension-underline';
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -79,6 +82,38 @@ const COLOR_MAP: Record<string, string> = {
   'lila': '#F3E8FF', 'lilac': '#F3E8FF'
 };
 
+const MenuBar = ({ editor }: { editor: any }) => {
+  if (!editor) return null;
+
+  const buttons = [
+    { name: 'bold', icon: <Bold size={14} />, action: () => editor.chain().focus().toggleBold().run() },
+    { name: 'italic', icon: <Italic size={14} />, action: () => editor.chain().focus().toggleItalic().run() },
+    { name: 'underline', icon: <UnderlineIcon size={14} />, action: () => editor.chain().focus().toggleUnderline().run() },
+    { name: 'bulletList', icon: <List size={14} />, action: () => editor.chain().focus().toggleBulletList().run() },
+    { name: 'orderedList', icon: <ListOrdered size={14} />, action: () => editor.chain().focus().toggleOrderedList().run() },
+  ];
+
+  return (
+    <div className="flex gap-1 p-2 border-b border-zinc-200 bg-zinc-50 rounded-t-2xl">
+      {buttons.map((btn) => (
+        <button
+          key={btn.name}
+          type="button"
+          onClick={btn.action}
+          className={`p-2 rounded-lg transition-colors ${
+            editor.isActive(btn.name) 
+              ? 'bg-zinc-200 text-zinc-900' 
+              : 'text-zinc-500 hover:bg-zinc-200'
+          }`}
+        >
+          {btn.icon}
+        </button>
+      ))}
+    </div>
+  );
+};
+
+
 export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit }: ProductModalProps) {
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]); 
@@ -92,11 +127,17 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
   const [categoryId, setCategoryId] = useState(''); 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [currentImageUrl, setCurrentImageUrl] = useState('');
-  
-  // --- NUEVOS ESTADOS PARA MANEJO DE COLORES ---
   const [colors, setColors] = useState<string[]>([]);
   const [colorInput, setColorInput] = useState('');
 
+  const editor = useEditor({
+    extensions: [StarterKit, Underline],
+    content: description,
+    onUpdate: ({ editor }) => {
+      setDescription(editor.getHTML());
+    },
+  }); 
+  
   const fetchCategories = async () => {
     const { data: catData } = await supabase.from('categories').select('id, name');
     if (catData) setCategories(catData);
@@ -107,17 +148,15 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
       const { data: catData } = await supabase.from('categories').select('id, name');
       if (catData) setCategories(catData);
     
-      fetchCategories();
       if (isOpen) {
         if (productToEdit) {
           setName(productToEdit.name || '');
           setPrice(productToEdit.price?.toString() || '');
-          setDescription(productToEdit.description || '');
+          setDescription(productToEdit.description || ''); 
           setStock(productToEdit.stock?.toString() || '10');
           setCategoryId(productToEdit.category_id || ''); 
           setCurrentImageUrl(productToEdit.image_url || '');
           
-          // Mapeo seguro de colores de la base de datos (Soporta Array o String separado por comas)
           if (productToEdit.colors) {
             if (Array.isArray(productToEdit.colors)) {
               setColors(productToEdit.colors);
@@ -145,12 +184,18 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
         setColorInput('');
       }
     }
+    
     loadInitialData();
   }, [isOpen, productToEdit]);
 
+  useEffect(() => {
+    if (editor && description !== editor.getHTML()) {
+      editor.commands.setContent(description);
+    }
+  }, [description, editor]);
+
   if (!isOpen) return null;
 
-  // Funciones auxiliares para añadir y quitar colores del estado
   const handleAddColor = (colorStr: string) => {
     const trimmed = colorStr.trim();
     if (trimmed && !colors.includes(trimmed)) {
@@ -184,6 +229,8 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
     
     try {
       let finalImageUrl = currentImageUrl;
+      
+      // Solo subimos a storage si el usuario seleccionó un archivo nuevo
       if (imageFile) {
         const uploadedUrl = await uploadImage(imageFile);
         if (uploadedUrl) finalImageUrl = uploadedUrl;
@@ -196,19 +243,32 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
         stock: parseInt(stock),
         category_id: categoryId || null, 
         image_url: finalImageUrl,
-        colors: colors // <-- AÑADIDO: Guardando el array de colores en tu columna de Supabase
+        colors: colors
       };
 
       let productId = productToEdit?.id;
 
       if (productToEdit) {
+        // Actualizar producto
         const { error } = await supabase
           .from('products')
           .update(productData)
           .eq('id', productToEdit.id);
         
         if (error) throw error;
+        
+        // Si se subió una imagen nueva, actualizamos también la tabla de media
+        if (imageFile && finalImageUrl) {
+          await supabase
+            .from('product_media')
+            .upsert({ 
+              product_id: productId, 
+              url: finalImageUrl, 
+              media_type: 'image' 
+            });
+        }
       } else {
+        // Crear nuevo producto
         const { data, error } = await supabase
           .from('products')
           .insert([productData])
@@ -217,18 +277,17 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
           
         if (error) throw error;
         productId = data.id;
-      }
 
-      if (finalImageUrl) {
-        const { error: mediaError } = await supabase
-          .from('product_media')
-          .insert({
-            product_id: productId,
-            url: finalImageUrl,
-            media_type: 'image'
-          });
-          
-        if (mediaError) console.error("Error al registrar en product_media:", mediaError);
+        // Registrar en media solo al crear por primera vez
+        if (finalImageUrl) {
+          await supabase
+            .from('product_media')
+            .insert({
+              product_id: productId,
+              url: finalImageUrl,
+              media_type: 'image'
+            });
+        }
       }
 
       onSuccess(); 
@@ -248,7 +307,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
       style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
     >
       {/* CAMBIADO: Ajustado el max-w-lg a max-w-2xl para soportar la distribución estética de dos columnas */}
-      <div className="bg-white w-full max-w-2xl rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-zinc-100 p-6 sm:p-8 relative animate-in zoom-in-95 fade-in duration-300 max-h-[95vh] overflow-y-auto custom-scrollbar">
+      <div className="bg-white w-full max-w-2xl md:max-w-4xl rounded-3xl sm:rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-zinc-100 p-4 sm:p-8 relative animate-in zoom-in-95 fade-in duration-300 max-h-[92vh] sm:max-h-[95vh] overflow-y-auto custom-scrollbar">
         
         <button 
           onClick={onClose}
@@ -454,13 +513,26 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
 
             {/* COLUMNA DERECHA: Descripción y Multimedia */}
             <div className="space-y-5">
-              <div>
-                <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Descripción</label>
-                <div className="relative">
-                  <div className="absolute top-4 left-0 pl-4 pointer-events-none">
-                    <AlignLeft className="h-4 w-4 text-zinc-400" />
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                  Descripción
+                </label>
+                
+                <div className="border border-zinc-200 rounded-2xl bg-white overflow-hidden shadow-sm">
+                  <MenuBar editor={editor} />
+                  
+                  <div className="relative">
+                    <div className="absolute top-3 left-3 pointer-events-none z-10">
+                      <AlignLeft className="h-4 w-4 text-zinc-400" />
+                    </div>
+                    
+                    <div className="min-h-[150px] max-h-[300px] overflow-y-auto">
+                      <EditorContent
+                        editor={editor}
+                        className="prose prose-sm max-w-none p-3 pl-10 focus:outline-none"
+                      />
+                    </div>
                   </div>
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="w-full bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 py-3.5 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm resize-none" placeholder="Detalles del producto, materiales, medidas..."></textarea>
                 </div>
               </div>
 

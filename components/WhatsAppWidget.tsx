@@ -4,8 +4,12 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Send, Sparkles } from 'lucide-react';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import { usePathname } from 'next/navigation';
 
 export default function WhatsAppWidget({ phoneNumber = '50672961548' }: { phoneNumber?: string }) {
+  const pathname = usePathname();
+  if (pathname.startsWith('/admin')) return null;
+  
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');

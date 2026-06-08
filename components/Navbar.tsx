@@ -11,6 +11,7 @@ import {
   Cog6ToothIcon // Icono elegante para la administración
 } from '@heroicons/react/24/outline';
 import { useCartStore } from '../app/store/useCartStore'; 
+import { usePathname } from 'next/navigation';
 
 const navLinks = [
   { name: 'Inicio', href: '/' },
@@ -20,6 +21,10 @@ const navLinks = [
 ];
 
 export default function Navbar() {
+  const pathname = usePathname();
+  
+  // Si estamos en cualquier ruta de /admin, el Navbar público desaparece
+  if (pathname.startsWith('/admin')) return null;
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 

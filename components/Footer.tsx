@@ -1,4 +1,6 @@
+'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const footerSections = [
   {
@@ -16,6 +18,10 @@ const footerSections = [
 ];
 
 export default function Footer() {
+  const pathname = usePathname();
+  
+  // Si estamos en cualquier ruta de /admin, el Navbar público desaparece
+  if (pathname.startsWith('/admin')) return null;
   const currentYear = new Date().getFullYear();
 
   return (
@@ -57,9 +63,17 @@ export default function Footer() {
           <p className="text-xs text-zinc-500">
             &copy; {currentYear} Cirelia Store. Todos los derechos reservados.
           </p>
-          <div className="flex space-x-6 mt-4 md:mt-0 text-xs text-zinc-600">
+          <div className="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0 text-xs text-zinc-600">
             <span>Costa Rica</span>
             <span>Cirelia Store</span>
+            <Link 
+              href="https://nexflow-portfolio.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-sky-500 transition-colors"
+            >
+              Powered by NexflowDigital
+            </Link>
           </div>
         </div>
       </div>

@@ -10,7 +10,6 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  // NUEVO: Estado para controlar cuándo el botón está procesando
   const [isLoading, setIsLoading] = useState(false); 
   const router = useRouter();
 
@@ -25,7 +24,9 @@ export default function AdminLoginPage() {
     // Usamos .trim() en el usuario por si se coló un espacio en blanco al final
     if (username.trim() === 'admin' && password === 'Magoos@12') {
       document.cookie = "admin_token=autenticado; path=/; max-age=86400";
-      router.push('/admin/dashboard');
+      // CORRECCIÓN CLAVE: Redirigir a '/admin' sin la barra al final
+      // Esto asegura que Next.js cargue directamente tu app/admin/page.tsx
+      router.push('/admin');
     } else {
       setError('Credenciales incorrectas. Acceso denegado.');
       setIsLoading(false); // Desactivamos la carga para que puedan volver a intentar
@@ -55,7 +56,7 @@ export default function AdminLoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               disabled={isLoading}
               className="w-full h-12 bg-zinc-50 border border-zinc-200 rounded-xl px-4 font-semibold text-sm focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-              placeholder="admin"
+              placeholder="Usuario"
               required
             />
           </div>

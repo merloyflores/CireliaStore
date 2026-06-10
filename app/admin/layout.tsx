@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation'; // <-- Agregamos useRouter
 import { 
   LayoutDashboard, Package, Truck, Users, MessageSquare, 
   Settings2, LogOut, Menu, X, ChevronLeft, ChevronRight
@@ -21,16 +21,26 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const pathname = usePathname();
+  const router = useRouter(); // <-- Inicializamos el router
 
-  // 1. EXCEPCIÓN DEL LOGIN: Si estamos en la ruta de login, devolvemos solo el contenido sin el Sidebar.
+  // 1. EXCEPCIÓN DEL LOGIN
   if (pathname === '/admin/login') {
     return <div className="min-h-screen bg-zinc-50 font-sans">{children}</div>;
   }
 
+  // 2. FUNCIÓN DE CERRAR SESIÓN SEGURA
+  const handleLogout = () => {
+    // Destruimos la cookie poniendo su fecha de expiración en el pasado
+    document.cookie = "admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    setIsMobileMenuOpen(false);
+    // Forzamos una recarga limpia hacia la página de inicio
+    window.location.href = '/'; 
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 flex flex-col md:flex-row font-sans">
       
-      {/* HEADER MÓVIL (Solo visible en celulares) */}
+      {/* HEADER MÓVIL */}
       <div className="md:hidden flex items-center justify-between bg-white border-b border-zinc-200 p-4 sticky top-0 z-40">
         <span className="text-xl font-black text-zinc-950 tracking-tighter">
           Cirelia<span className="text-sky-600">Admin</span>
@@ -43,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </button>
       </div>
 
-      {/* OVERLAY MÓVIL: Fondo oscuro que permite cerrar el menú al hacer clic afuera */}
+      {/* OVERLAY MÓVIL */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-zinc-950/40 backdrop-blur-sm z-40 md:hidden transition-opacity"
@@ -58,8 +68,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         {/* Header del Sidebar */}
-        <div className="p-6 border-b border-zinc-100 flex justify-between items-center shrink-0 h-[73px]">
-          {/* Logo (Se oculta en desktop si está contraído, pero en móvil siempre se ve) */}
+        <div className="p-6 border-b border-zinc-100 flex justify-between items-center shrink-0 h-18.25">
           <Link 
             href="/admin" 
             onClick={() => setIsMobileMenuOpen(false)}
@@ -68,14 +77,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Cirelia<span className="text-sky-600">.</span>
           </Link>
           
-          {/* Icono C solo visible cuando el sidebar está contraído en desktop */}
           {!isSidebarOpen && (
             <div className="hidden md:flex w-full justify-center">
               <span className="text-2xl font-black text-sky-600">C.</span>
             </div>
           )}
 
-          {/* Botón de contraer/expandir (Solo Desktop) */}
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
             className="hidden md:block p-1.5 text-zinc-400 hover:bg-zinc-100 rounded-lg transition absolute -right-3 bg-white border border-zinc-200"
@@ -83,7 +90,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
           </button>
 
-          {/* Botón de cerrar (Solo Móvil) */}
           <button 
             onClick={() => setIsMobileMenuOpen(false)} 
             className="md:hidden p-1.5 text-zinc-400 hover:bg-zinc-100 rounded-lg transition"
@@ -99,14 +105,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </p>
           
           {adminLinks.map((link) => {
-            const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
+            // CORRECCIÓN: Lógica exacta para saber qué botón marcar
+            const isActive = link.href === '/admin' 
+              ? pathname === '/admin' // Si es Dashboard, tiene que ser EXACTAMENTE la raíz /admin
+              : pathname === link.href || pathname.startsWith(`${link.href}/`); // Para los demás, puede ser la ruta o subrutas
+            
             const Icon = link.icon;
             
             return (
               <Link 
                 key={link.name} 
                 href={link.href}
-                onClick={() => setIsMobileMenuOpen(false)} // Cierra el menú en móvil al hacer clic
+                onClick={() => setIsMobileMenuOpen(false)}
                 title={!isSidebarOpen ? link.name : ''}
                 className={`flex items-center py-3 rounded-xl font-bold text-sm transition-all duration-200 
                   ${!isSidebarOpen ? 'md:justify-center px-3' : 'px-3'}
@@ -122,12 +132,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
 
-        {/* Footer Sidebar (Cerrar Sesión) */}
+        {/* Footer Sidebar (Cerrar Sesión Real) */}
         <div className="p-4 border-t border-zinc-100">
-          <Link 
-            href="/" 
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={`flex items-center py-3 rounded-xl font-bold text-sm text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-colors
+          <button 
+            onClick={handleLogout}
+            className={`w-full flex items-center py-3 rounded-xl font-bold text-sm text-zinc-500 hover:bg-red-50 hover:text-red-600 transition-colors
               ${!isSidebarOpen ? 'md:justify-center px-3' : 'px-3'}
             `}
             title={!isSidebarOpen ? 'Salir de Admin' : ''}
@@ -136,7 +145,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className={`ml-3 ${!isSidebarOpen ? 'md:hidden' : ''}`}>
               Salir
             </span>
-          </Link>
+          </button>
         </div>
       </aside>
 

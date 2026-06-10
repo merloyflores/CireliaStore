@@ -8,10 +8,10 @@ import {
   ShoppingBagIcon, 
   MagnifyingGlassIcon, 
   HeartIcon,
-  Cog6ToothIcon // Icono elegante para la administración
+  Cog6ToothIcon 
 } from '@heroicons/react/24/outline';
 import { useCartStore } from '../app/store/useCartStore'; 
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation'; // <-- Agregamos useRouter
 
 const navLinks = [
   { name: 'Inicio', href: '/' },
@@ -22,6 +22,7 @@ const navLinks = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter(); // <-- Inicializamos el router
   
   // Si estamos en cualquier ruta de /admin, el Navbar público desaparece
   if (pathname.startsWith('/admin')) return null;
@@ -41,6 +42,17 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // 3. NUEVA FUNCIÓN: Verifica el login antes de ir al admin
+  const handleAdminNavigation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const isLogged = document.cookie.includes('admin_token=autenticado');
+    if (isLogged) {
+      router.push('/admin');
+    } else {
+      router.push('/admin/login');
+    }
+  };
 
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -98,14 +110,14 @@ export default function Navbar() {
               )}
             </Link>
 
-            {/* BOTÓN PANEL DE CONTROL (Escritorio) */}
-            <Link 
-              href="/admin/dashboard" 
+            {/* BOTÓN PANEL DE CONTROL (Escritorio) - Actualizado */}
+            <button 
+              onClick={handleAdminNavigation}
               className="hidden md:flex p-2.5 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-full transition-all"
               title="Panel de Administración"
             >
               <Cog6ToothIcon className="w-5 h-5" />
-            </Link>
+            </button>
             
             {/* MENÚ MÓVIL TRIGGER */}
             <div className="md:hidden flex items-center ml-2">
@@ -121,7 +133,7 @@ export default function Navbar() {
       </div>
 
       {/* MENÚ MÓVIL DESPLEGABLE */}
-      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[450px] opacity-100 border-t border-zinc-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-112.5 opacity-100 border-t border-zinc-100' : 'max-h-0 opacity-0'}`}>
         <div className="px-6 py-8 space-y-4 bg-white">
           {navLinks.map((link) => (
             <Link
@@ -143,15 +155,17 @@ export default function Navbar() {
               Mi Cuenta
             </Link>
 
-            {/* BOTÓN PANEL DE CONTROL (Móvil - Pensado para un acceso rápido y cómodo) */}
-            <Link 
-              href="/admin/dashboard" 
-              className="block w-full bg-zinc-950 text-white py-4 rounded-2xl font-black text-center shadow-md active:scale-95 transition text-sm flex items-center justify-center gap-2"
-              onClick={() => setIsOpen(false)}
+            {/* BOTÓN PANEL DE CONTROL (Móvil) - Actualizado */}
+            <button 
+              onClick={(e) => {
+                setIsOpen(false);
+                handleAdminNavigation(e);
+              }}
+              className="w-full bg-zinc-950 text-white py-4 rounded-2xl font-black text-center shadow-md active:scale-95 transition text-sm flex items-center justify-center gap-2"
             >
               <Cog6ToothIcon className="w-5 h-5 text-zinc-400" />
               Panel Administrador
-            </Link>
+            </button>
           </div>
         </div>
       </div>

@@ -1,31 +1,60 @@
-'use client'; // <-- Esto le dice a Next.js que este archivo es interactivo
+'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ChevronDown } from 'lucide-react';
 
-export default function SortSelector({ currentSort }: { currentSort: string }) {
+const SORT_OPTIONS = [
+  { value: '', label: 'Novedades y Destacados' },
+  { value: 'price_asc', label: 'Precio: Menor a Mayor' },
+  { value: 'price_desc', label: 'Precio: Mayor a Menor' },
+  { value: 'name_asc', label: 'Nombre: A - Z' },
+  { value: 'rating_desc', label: 'Más Valorados' },
+];
+
+export default function SortSelector() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  
+  // LEER DIRECTAMENTE DE LA URL (Esto arregla el bug de que no se marque)
+  const currentSort = searchParams.get('sort') || '';
 
   const handleSortChange = (value: string) => {
-    // Creamos una nueva URL con el filtro seleccionado
     const params = new URLSearchParams(searchParams.toString());
-    if (value) params.set('sort', value);
-    else params.delete('sort');
     
-    router.push(`/shop?${params.toString()}`);
+    if (value) {
+      params.set('sort', value);
+    } else {
+      params.delete('sort');
+    }
+    
+    router.push(`/shop?${params.toString()}`, { scroll: false });
   };
 
+  const currentLabel = SORT_OPTIONS.find(o => o.value === currentSort)?.label;
+
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm font-medium text-zinc-400">Ordenar:</span>
+    <div className="relative flex items-center justify-between sm:justify-start gap-2 bg-white px-4 py-3 sm:py-2.5 w-full sm:w-80 rounded-xl sm:rounded-2xl border border-zinc-200 shadow-xs hover:border-zinc-300 transition-all">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="text-[10px] sm:text-xs font-black text-zinc-400 uppercase tracking-wider whitespace-nowrap">
+          Ordenar por:
+        </span>
+        <span className="text-sm font-bold text-zinc-800 truncate pr-6">
+          {currentLabel}
+        </span>
+      </div>
+
+      <ChevronDown size={16} className="text-zinc-400 pointer-events-none absolute right-4" />
+
       <select 
+        value={currentSort} 
         onChange={(e) => handleSortChange(e.target.value)}
-        className="bg-white border border-zinc-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 ring-sky-500 cursor-pointer"
-        defaultValue={currentSort}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20 appearance-none"
       >
-        <option value="">Novedades</option>
-        <option value="price_asc">Precio: Menor a Mayor</option>
-        <option value="price_desc">Precio: Mayor a Menor</option>
+        {SORT_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
       </select>
     </div>
   );

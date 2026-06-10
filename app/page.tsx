@@ -6,12 +6,22 @@ import { supabase } from '../lib/supabase';
 import SectionContainer from "../components/SectionContainer";
 import ProductCard from "../components/ProductCard";
 import { Truck, ShieldCheck, Sparkles, MessageSquare } from 'lucide-react';
+
+// 1. DICCIONARIO DE ESLÓGANES PREMIUM
+const categorySlogans: Record<string, string> = {
+  'Muebles': 'Diseño atemporal que define tu espacio.',
+  'Iluminación': 'La atmósfera perfecta para cada momento.',
+  'Decoración': 'Detalles precisos que cuentan tu historia.',
+  'Dormitorio': 'Tu refugio personal de descanso puro.',
+  'Exteriores': 'Naturaleza y confort en perfecta sintonía.',
+};
+
 export default function Home() {
   const [products, setProducts] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // 1. Tus 5 videos
+  // Tus 5 videos de fondo
   const videoSources = [
     "/video/5395620_Coll_wavebreak_People_3840x2160.mp4",
     "/video/1107111_1080p_4k_3840x2160.mp4",
@@ -22,7 +32,9 @@ export default function Home() {
 
   useEffect(() => {
     const fetchProducts = async () => {
-      const { data } = await supabase.from('products').select('*').limit(4);
+      // NOTA: Eliminamos el .limit(4) para traer todos los productos 
+      // y que la agrupación por categorías funcione correctamente.
+      const { data } = await supabase.from('products').select('*');
       if (data) setProducts(data);
     };
     fetchProducts();
@@ -36,11 +48,20 @@ export default function Home() {
     }, 800);
   };
 
+  // 2. AGRUPACIÓN DINÁMICA (VALORES ANTES DEL RETURN)
+  const groupedProducts = products?.reduce((acc: Record<string, any[]>, product) => {
+    const cat = product.category || 'Colección Especial';
+    if (!acc[cat]) {
+      acc[cat] = [];
+    }
+    acc[cat].push(product);
+    return acc;
+  }, {});
+
   return (
     <div className="flex flex-col w-full">
-      {/* 1. SECCIÓN HERO*/}
-      <section className="relative h-[85vh] min-h-150 w-full bg-zinc-100 flex items-center justify-center overflow-hidden">
-        
+      {/* 1. SECCIÓN HERO */}
+      <section className="relative min-h-[85vh] sm:h-[85vh] w-full bg-zinc-100 flex items-center justify-center overflow-hidden pt-16 pb-24 sm:py-0">        
         {/* FONDO DE VIDEO Y OVERLAYS */}
         <div className="absolute inset-0 z-0 bg-zinc-950">
           <video 
@@ -64,7 +85,6 @@ export default function Home() {
 
         {/* CONTENIDO PRINCIPAL */}
         <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-5xl mx-auto mt-10">
-
 
           {/* Subtítulo */}
           <h2 className="text-sky-200 uppercase tracking-[0.4em] text-xs sm:text-sm font-black mb-4 drop-shadow-md">
@@ -103,8 +123,9 @@ export default function Home() {
           </div>
         </div>
 
-        {/* INDICADOR DE SCROLL (Muestra al usuario que hay más abajo) */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce opacity-70">
+        {/* INDICADOR DE SCROLL */}
+        {/* CAMBIO AQUÍ: Cambiamos bottom-8 por bottom-4 en móvil para pegarlo un toque más al borde inferior y ganar aire libre */}
+        <div className="absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center animate-bounce opacity-70">
           <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 mb-2">Deslizar</span>
           <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -112,20 +133,69 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. SECCIÓN PRODUCTOS */}
-      <SectionContainer>
-        <h3 className="text-3xl font-bold mb-10 text-zinc-900">Nuestros Productos</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {products?.map((product: any) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+      {/* 2. SECCIÓN CON FONDO #F3F3F4 */}
+      <section className="py-24 bg-[#F3F3F4] overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6">
+          
+          {/* Iteramos sobre cada categoría que tenga productos */}
+          {Object.entries(groupedProducts || {}).map(([category, items]) => {
+            // Tomamos solo los primeros 4 productos para el escaparate
+            const showcaseItems = items.slice(0, 4);
+            const hasMore = items.length > 4;
+
+            return (
+              <div key={category} className="mb-24 last:mb-0">
+                
+                {/* ENCABEZADO DE LA CATEGORÍA */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+                  <div>
+                    <h2 className="text-3xl md:text-5xl font-black text-zinc-950 tracking-tighter mb-3 capitalize">
+                      {category}
+                    </h2>
+                    <p className="text-zinc-500 font-medium text-lg">
+                      {categorySlogans[category] || 'Explora nuestra selección curada de alta gama.'}
+                    </p>
+                  </div>
+                  
+                  {/* Botón superior para ver la categoría completa */}
+                  <Link 
+                    href={`/shop?category=${encodeURIComponent(category)}`} 
+                    className="group flex items-center gap-2 text-sm font-bold text-zinc-950 hover:text-sky-600 transition-colors"
+                  >
+                    Ver todo {category}
+                    <span className="w-8 h-8 rounded-full bg-white flex items-center justify-center border border-zinc-200 group-hover:border-sky-200 group-hover:bg-sky-50 transition-all">
+                      →
+                    </span>
+                  </Link>
+                </div>
+
+                {/* GRID DE PRODUCTOS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {showcaseItems.map((product: any) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+
+                {/* BOTÓN "VER MÁS" INFERIOR (Opcional, aparece si hay más de 4 productos) */}
+                {hasMore && (
+                  <div className="mt-12 text-center md:hidden">
+                    <Link 
+                      href={`/shop?category=${encodeURIComponent(category)}`} 
+                      className="inline-block bg-white text-zinc-950 px-8 py-4 rounded-full font-bold shadow-sm border border-zinc-200 hover:bg-zinc-50 transition-colors"
+                    >
+                      Explorar más {category}
+                    </Link>
+                  </div>
+                )}
+                
+                {/* Separador sutil entre categorías (no se muestra en la última) */}
+                <div className="hidden last:block w-full h-px bg-zinc-200 mt-24"></div>
+              </div>
+            );
+          })}
+
         </div>
-        <div className="mt-12 text-center">
-          <Link href="/shop" className="text-zinc-500 hover:text-sky-600 font-medium transition">
-            Ver toda la colección →
-          </Link>
-        </div>
-      </SectionContainer>
+      </section>
 
       {/* 3. SECCIÓN DE VALORES Y CONFIANZA */}
       <section className="py-24 bg-white border-t border-zinc-100">

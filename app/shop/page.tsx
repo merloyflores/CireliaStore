@@ -1,92 +1,143 @@
 import { supabase } from '@/lib/supabase';
 import SectionContainer from "@/components/SectionContainer";
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import ProductCard from "@/components/ProductCard";
 import SortSelector from "@/components/SortSelector";
+import CategoryMultiFilter from "@/components/CategoryMultiFilter";
+import LimitSelector from "@/components/LimitSelector";
 import Link from 'next/link';
+import { MessageCircle, Mail, ShieldCheck, Truck, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
-export default async function ShopPage({
-  searchParams,
-}: {
-  searchParams: { category?: string; sort?: string };
-}) {
-  const selectedCategory = searchParams.category;
 
-  // 1. Iniciamos la consulta a Supabase
+interface ShopProps {
+  searchParams: Promise<{ 
+    category?: string; 
+    sort?: string; 
+    page?: string; 
+    limit?: string; 
+  }> | any;
+}
+
+export default async function ShopPage({ searchParams }: ShopProps) {
+  // Resolver los parámetros de búsqueda de forma segura
+  const resolvedParams = await searchParams;
+  const categoryParam = resolvedParams.category || '';
+  const currentSort = resolvedParams.sort || '';
+  const currentPage = Number(resolvedParams.page) || 1;
+  const currentLimit = Number(resolvedParams.limit) || 16;
+
+  const from = (currentPage - 1) * currentLimit;
+  const to = from + currentLimit - 1;
+
+  // 1. QUERY DE SUPABASE INTELIGENTE MULTI-CATEGORÍA
   let query = supabase
     .from('products')
-    .select('*, categories!inner(slug)'); // Hacemos un join con categorías
+    .select('*, categories!inner(slug)', { count: 'exact' });
 
-  // 2. Aplicamos filtro de categoría si existe en la URL
-  if (selectedCategory && selectedCategory !== 'todos') {
-    query = query.eq('categories.slug', selectedCategory);
+  // Si hay categorías seleccionadas, las transformamos en array y usamos .in()
+  if (categoryParam) {
+    const categoryArray = categoryParam.split(',');
+    query = query.in('categories.slug', categoryArray);
   }
 
-  // 3. Aplicamos el orden
-  if (searchParams.sort === 'price_asc') query = query.order('price', { ascending: true });
-  else if (searchParams.sort === 'price_desc') query = query.order('price', { ascending: false });
+  // Ordenamiento
+  if (currentSort === 'price_asc') query = query.order('price', { ascending: true });
+  else if (currentSort === 'price_desc') query = query.order('price', { ascending: false });
   else query = query.order('created_at', { ascending: false });
 
-  // Traemos los productos y las categorías por separado
-  const [{ data: products }, { data: categories }] = await Promise.all([
+  query = query.range(from, to);
+
+  const [{ data: products, count }, { data: categories }] = await Promise.all([
     query,
     supabase.from('categories').select('*')
   ]);
 
+  const totalProducts = count || 0;
+
   return (
     <SectionContainer>
-      <div className="flex flex-col gap-8 mb-12">
-        <div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-zinc-900">Nuestra Colección</h1>
-          <p className="text-zinc-500 mt-2">Filtra por espacio y encuentra tu estilo ideal.</p>
-        </div>
+      {/* ENCABEZADO EDITORIAL */}
+      <div className="mb-10">
+        <h1 className="text-4xl font-black tracking-tighter text-zinc-950">Nuestra Colección</h1>
+        <p className="text-zinc-500 mt-1 text-sm font-medium">Equilibrio perfecto entre espacio, diseño y confort.</p>
+      </div>
 
-        {/* BARRA DE FILTROS ESTILO UNIMART/AMAZON */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-y border-zinc-100 py-6">
-          
-          {/* Categorías (Pestañas) */}
-          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-            <Link 
-              href="/shop"
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition ${!selectedCategory || selectedCategory === 'todos' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
-            >
-              Todos
-            </Link>
-            {categories?.map((cat: any) => (
-              <Link
-                key={cat.id}
-                href={`/shop?category=${cat.slug}`}
-                className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition ${selectedCategory === cat.slug ? 'bg-sky-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'}`}
-              >
-                {cat.name}
-              </Link>
-            ))}
-          </div>
+      {/* ARQUITECTURA DE FILTROS EN CAPAS (No se rompe nunca) */}
+      <div className="flex flex-col gap-6 bg-zinc-50 border border-zinc-200/60 rounded-3xl p-6 mb-12 shadow-xs">
         
-          {/* Selector de Orden (Este requiere un pequeño componente cliente o recarga de página) */}
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-zinc-400">Ordenar:</span>
-            {/* Selector de Orden (Borramos el select viejo y dejamos solo el componente nuevo) */}
-            <div className="flex items-center gap-3">
-            {/* El componente SortSelector ya trae la etiqueta "Ordenar:" y el diseño adentro */}
-            <SortSelector currentSort={searchParams.sort || ''} />
-            </div>
+        {/* CAPA 1: Categorías Multi-selección (Arriba ocupando todo el flujo) */}
+        <CategoryMultiFilter categories={categories || []} />
+        
+        <div className="h-px bg-zinc-200/80 w-full" />
+
+        {/* CAPA 2: Controles de Orden y Conteo (Abajo distribuidos limpiamente) */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <p className="text-xs font-bold text-zinc-500 order-2 md:order-1">
+            Mostrando <span className="text-zinc-950">{totalProducts === 0 ? 0 : from + 1}–{Math.min(to + 1, totalProducts)}</span> de {totalProducts} piezas.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center gap-3 order-1 md:order-2 w-full md:w-auto">
+            <LimitSelector currentLimit={currentLimit.toString()} />
+            <SortSelector />
           </div>
         </div>
       </div>
 
-      {/* RESULTADOS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
-        {products?.map((product: any) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
-
-      {products?.length === 0 && (
-        <div className="text-center py-20 bg-zinc-50 rounded-3xl">
-          <p className="text-zinc-400">No hay productos en esta categoría todavía.</p>
+      {/* REJILLA DE PRODUCTOS */}
+      {products && products.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+          {products.map((product: any) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-24 bg-white border border-dashed border-zinc-200 rounded-3xl">
+          <p className="text-zinc-400 font-medium">No se encontraron artículos con la combinación de filtros seleccionada.</p>
+          <Link href="/shop" className="mt-4 inline-block text-xs font-black text-sky-600 uppercase tracking-wider hover:underline">
+            Restablecer Catálogo
+          </Link>
         </div>
       )}
+
+      {/* ==========================================
+          NUEVA SECCIÓN: CALL TO ACTION (CONVERSÁ CON NOSOTROS)
+          ========================================== */}
+      <div className="mt-32 bg-zinc-950 text-white rounded-[2.5rem] p-8 md:p-16 relative overflow-hidden shadow-2xl">
+        {/* Efecto de fondo sutil premium */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-zinc-800/40 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-3xl">
+          <h2 className="text-3xl md:text-6xl font-black tracking-tighter mb-4 leading-none">
+            ¿Dudas sobre dimensiones o materiales?
+          </h2>
+          <p className="text-zinc-400 text-base md:text-xl font-medium mb-10 max-w-xl leading-relaxed">
+            Hablemos directamente. Nuestro equipo de diseño está disponible para ayudarte a elegir la pieza perfecta para tu espacio.
+          </p>
+
+          {/* Botones de Canales de Contacto */}
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <a 
+              href="https://wa.me/50670305676?text=Hola!%20Estoy%20en%20la%20tienda%20Cirelia%20y%20me%20gustar%C3%ADa%20recibir%20asesor%C3%ADa%20con%20un%20producto." 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 bg-white text-zinc-950 font-black text-sm uppercase tracking-wider px-8 py-4.5 rounded-2xl w-full sm:w-auto hover:bg-zinc-100 active:scale-98 transition-all shadow-lg"
+            >
+              <WhatsAppIcon style={{ fontSize: 20 }} className="fill-current text-zinc-950" /> 
+              Chat de WhatsApp
+            </a>
+
+            <a 
+              href="mailto:info@cireliastore.com?subject=Consulta%20de%20Productos%20-%20Cirelia" 
+              className="flex items-center justify-center gap-3 bg-zinc-900 border border-zinc-800 text-zinc-300 font-bold text-sm px-8 py-4.5 rounded-2xl w-full sm:w-auto hover:bg-zinc-800 hover:text-white transition-all"
+            >
+              <Mail size={18} />
+              info@cireliastore.com
+            </a>
+          </div>
+        </div>
+      </div>
     </SectionContainer>
   );
 }

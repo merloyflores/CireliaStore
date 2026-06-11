@@ -9,17 +9,20 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@auth/supabase-adapter": "^1.11.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@heroicons/react": "^2.2.0",
     "@mui/icons-material": "^9.0.1",
     "@mui/material": "^9.0.1",
+    "@next-auth/supabase-adapter": "^0.2.1",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.98.0",
     "@tiptap/react": "^3.26.0",
     "@tiptap/starter-kit": "^3.26.0",
     "lucide-react": "^0.577.0",
     "next": "16.1.6",
+    "next-auth": "^4.24.14",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "zustand": "^5.0.12"

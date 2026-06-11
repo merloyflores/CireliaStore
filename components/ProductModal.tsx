@@ -14,6 +14,8 @@ import {
   Tag, 
   AlignLeft, 
   Plus,
+  Percent,
+  Ruler,
   Palette, Bold, Italic, List, ListOrdered, Underline as UnderlineIcon
 } from 'lucide-react';
 import CategoryModal from './CategoryModal';
@@ -34,6 +36,7 @@ const COLOR_MAP: Record<string, string> = {
   'oro rosa': '#B76E79', 'rose gold': '#B76E79',
   'bronce': '#CD7F32', 'bronze': '#CD7F32',
   'cobre': '#B87333', 'copper': '#B87333',
+  'champagne': '#F7E7CE',
 
   // --- LOS MINIMALISTAS DE FÁBRICA ---
   'crudo': '#FDFBF7', 'raw': '#FDFBF7',
@@ -59,6 +62,7 @@ const COLOR_MAP: Record<string, string> = {
   'naranja': '#F97316', 'orange': '#F97316',
   'amarillo': '#EAB308', 'yellow': '#EAB308',
   'púrpura': '#A855F7', 'purple': '#A855F7', 'morado': '#8B5CF6',
+  'ciruela': '#8E4585', 'plum': '#8E4585',
 
   // --- PALETA CÁLIDA, MUEBLES Y TEXTILES ---
   'marrón': '#78350F', 'brown': '#78350F', 'cafe': '#78350F', 'café': '#78350F',
@@ -68,6 +72,7 @@ const COLOR_MAP: Record<string, string> = {
   'vino': '#7F1D1D', 'burgundy': '#7F1D1D', 'burdeos': '#7F1D1D',
   'coral': '#F87171',
   'salmón': '#FA8072', 'salmon': '#FA8072',
+  'durazno': '#FFDAB9', 'peach': '#FFDAB9',
   'fucsia': '#D946EF', 'fuchsia': '#D946EF',
 
   // --- PALETA BOTÁNICA, NÓRDICA Y OCÉANO ---
@@ -79,7 +84,11 @@ const COLOR_MAP: Record<string, string> = {
   'azul marino': '#1E3A8A',
   'índigo': '#4338CA', 'indigo': '#4338CA',
   'lavanda': '#E9D5FF', 'lavender': '#E9D5FF',
-  'lila': '#F3E8FF', 'lilac': '#F3E8FF'
+  'lila': '#F3E8FF', 'lilac': '#F3E8FF',
+  'musgo': '#8A9A5B', 'moss': '#8A9A5B',
+  'salvia': '#9DC183', 'sage': '#9DC183',
+  'bosque': '#228B22', 'forest': '#228B22',
+  'denim': '#1560BD'
 };
 
 const MenuBar = ({ editor }: { editor: any }) => {
@@ -130,6 +139,8 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
   const [colors, setColors] = useState<string[]>([]);
   const [colorInput, setColorInput] = useState('');
 
+  
+
   const editor = useEditor({
     extensions: [StarterKit, Underline],
     content: description,
@@ -141,6 +152,28 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
   const fetchCategories = async () => {
     const { data: catData } = await supabase.from('categories').select('id, name');
     if (catData) setCategories(catData);
+  };
+
+  // Estados para Promociones
+  const [isPromoActive, setIsPromoActive] = useState(false);
+  const [promoPrice, setPromoPrice] = useState('');
+
+  // Estados para Tallas / Medidas Inteligentes
+  const [sizes, setSizes] = useState<string[]>([]);
+  const [sizeInput, setSizeInput] = useState('');
+
+  const handleAddSize = (val: string) => {
+    const trimmed = val.trim().toUpperCase(); // Lo pasamos a mayúscula para que se vea estandarizado (S, M, L)
+    if (trimmed && !sizes.includes(trimmed)) {
+      setSizes([...sizes, trimmed]);
+      setSizeInput('');
+    }
+  };
+
+  const [activeSizeSegment, setActiveSizeSegment] = useState('vestir');
+
+  const handleRemoveSize = (indexToRemove: number) => {
+    setSizes(sizes.filter((_, i) => i !== indexToRemove));
   };
 
   useEffect(() => {
@@ -157,6 +190,11 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
           setCategoryId(productToEdit.category_id || ''); 
           setCurrentImageUrl(productToEdit.image_url || '');
           
+          // --- AQUÍ INSERTAS EL CÓDIGO DE TALLAS Y PROMOS ---
+          setSizes(productToEdit.sizes || []);
+          setIsPromoActive(!!productToEdit.is_promo);
+          setPromoPrice(productToEdit.promo_price?.toString() || '');
+
           if (productToEdit.colors) {
             if (Array.isArray(productToEdit.colors)) {
               setColors(productToEdit.colors);
@@ -172,6 +210,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
             setColors([]);
           }
         } else {
+          // --- ESTO ES IMPORTANTE: Resetear al crear uno nuevo ---
           setName('');
           setPrice('');
           setDescription('');
@@ -179,6 +218,9 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
           setCategoryId('');
           setCurrentImageUrl('');
           setColors([]);
+          setSizes([]);           // Reset
+          setIsPromoActive(false); // Reset
+          setPromoPrice('');       // Reset
         }
         setImageFile(null);
         setColorInput('');
@@ -243,7 +285,11 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
         stock: parseInt(stock),
         category_id: categoryId || null, 
         image_url: finalImageUrl,
-        colors: colors
+        colors: colors,
+        // --- AGREGA ESTO ---
+        sizes: sizes,
+        is_promo: isPromoActive,
+        promo_price: isPromoActive && promoPrice ? parseFloat(promoPrice) : null
       };
 
       let productId = productToEdit?.id;
@@ -306,12 +352,12 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
       className="fixed top-0 left-0 w-screen h-screen bg-zinc-950/70 backdrop-blur-md z-99999 flex items-center justify-center p-4 sm:p-6"
       style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
     >
-      {/* CAMBIADO: Ajustado el max-w-lg a max-w-2xl para soportar la distribución estética de dos columnas */}
-      <div className="bg-white w-full max-w-2xl md:max-w-4xl rounded-3xl sm:rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-zinc-100 p-4 sm:p-8 relative animate-in zoom-in-95 fade-in duration-300 max-h-[92vh] sm:max-h-[95vh] overflow-y-auto custom-scrollbar">
+      {/* MODIFICADO: Ajustado el max-w para acomodar 3 columnas elegantes (max-w-6xl y xl:max-w-[1200px]) */}
+      <div className="bg-white w-full max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-[1200px] rounded-3xl sm:rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-zinc-100 p-4 sm:p-8 relative animate-in zoom-in-95 fade-in duration-300 max-h-[92vh] sm:max-h-[95vh] overflow-y-auto custom-scrollbar">
         
         <button 
           onClick={onClose}
-          className="absolute top-6 right-6 p-2 bg-zinc-50 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200 hover:rotate-90 rounded-full transition-all duration-300"
+          className="absolute top-6 right-6 p-2 bg-zinc-50 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200 hover:rotate-90 rounded-full transition-all duration-300 z-10"
           title="Cerrar ventana"
         >
           <X size={20} strokeWidth={2.5} />
@@ -328,51 +374,24 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* DISTRIBUCIÓN GRID EN ESCRITORIO: 2 Columnas Balanceadas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          {/* DISTRIBUCIÓN GRID EN ESCRITORIO: 3 Columnas Balanceadas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
             
-            {/* COLUMNA IZQUIERDA: Identidad e Inventario */}
+            {/* COLUMNA 1: Identidad e Inventario básico */}
             <div className="space-y-5">
+              
+              {/* NOMBRE DEL PRODUCTO */}
               <div>
                 <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Nombre del Producto</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Type className="h-4 w-4 text-zinc-400" />
                   </div>
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="Ej. Cojín Decorativo Boho" />
+                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="Ej. Zapatillas Urbanas, Rodillera Pro..." />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Precio (₡)</label>
-                  <div className="relative">
-                    {/* REEMPLAZADO: Quitamos el DollarSign y metemos el Colón Tico estilizado */}
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <span className="text-sm font-black text-zinc-400 select-none">₡</span>
-                    </div>
-                    <input 
-                      type="number" 
-                      value={price} 
-                      onChange={(e) => setPrice(e.target.value)} 
-                      required 
-                      className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" 
-                      placeholder="18000" 
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Stock</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                      <Package className="h-4 w-4 text-zinc-400" />
-                    </div>
-                    <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="10" />
-                  </div>
-                </div>
-              </div>
-
+              {/* CATEGORÍA */}
               <div>
                 <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Categoría</label>
                 <div className="flex gap-2">
@@ -394,14 +413,291 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                   <button 
                     type="button" 
                     onClick={() => setIsCategoryModalOpen(true)}
-                    className="h-12 w-12 flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 rounded-xl text-zinc-600 transition-all"
+                    className="h-12 w-12 flex items-center justify-center bg-zinc-100 hover:bg-zinc-200 rounded-xl text-zinc-600 transition-all active:scale-95"
                   >
                     <Plus size={20} />
                   </button>
                 </div>
               </div>
 
-              {/* SECCIÓN NUEVA: Panel de Selección Estética de Colores */}
+              {/* PRECIO Y STOCK */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Precio Regular (₡)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <span className="text-sm font-black text-zinc-400 select-none">₡</span>
+                    </div>
+                    <input 
+                      type="number" 
+                      value={price} 
+                      onChange={(e) => setPrice(e.target.value)} 
+                      required 
+                      className={`w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm ${isPromoActive ? 'line-through text-zinc-400' : 'text-zinc-900'}`} 
+                      placeholder="18000" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Stock Total</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <Package className="h-4 w-4 text-zinc-400" />
+                    </div>
+                    <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} required className="w-full h-12 bg-zinc-50/50 border border-zinc-200 rounded-xl pl-11 pr-4 font-medium focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all text-sm" placeholder="10" />
+                  </div>
+                </div>
+              </div>
+
+              {/* MÓDULO INTELIGENTE DE PROMOCIÓN */}
+              <div className={`p-4 rounded-2xl border transition-all duration-300 ${isPromoActive ? 'bg-sky-50/50 border-sky-200' : 'bg-zinc-50/50 border-zinc-200'}`}>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 cursor-pointer" onClick={() => setIsPromoActive(!isPromoActive)}>
+                    <Percent size={14} className={isPromoActive ? 'text-sky-500' : ''} />
+                    Activar Promoción Especial
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsPromoActive(!isPromoActive)}
+                    className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-1 focus:outline-none focus:ring-2 focus:ring-sky-500/50 ${isPromoActive ? 'bg-sky-500' : 'bg-zinc-300'}`}
+                  >
+                    <span className={`bg-white w-4 h-4 rounded-full shadow-sm transition-transform duration-300 ${isPromoActive ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+                
+                {isPromoActive && (
+                  <div className="mt-4 relative animate-in slide-in-from-top-2 fade-in duration-200">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <span className="text-sm font-black text-sky-600 select-none">₡</span>
+                    </div>
+                    <input 
+                      type="number" 
+                      value={promoPrice} 
+                      onChange={(e) => setPromoPrice(e.target.value)} 
+                      required={isPromoActive}
+                      className="w-full h-11 bg-white border border-sky-300 rounded-xl pl-11 pr-4 font-bold text-sky-700 focus:outline-none focus:border-sky-500 focus:ring-4 focus:ring-sky-500/20 transition-all text-sm placeholder:text-sky-300 shadow-sm shadow-sky-100" 
+                      placeholder="Precio de oferta..." 
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* MÓDULO INTELIGENTE DE TALLAS / MEDIDAS (MEGA LÍNEA COMPRIMIDA) */}
+              <div>
+                <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                  <Ruler size={14} />
+                  Tallas o Medidas (Opcional)
+                </label>
+                <div className="p-3.5 bg-zinc-50/50 border border-zinc-200 rounded-2xl space-y-3">
+                  
+                  {/* Fila superior: Selector de Tipo + Input manual rápido */}
+                  <div className="grid grid-cols-12 gap-2">
+                    <select
+                      value={activeSizeSegment}
+                      onChange={(e) => setActiveSizeSegment(e.target.value)}
+                      className="col-span-5 h-9 bg-white border border-zinc-200 rounded-xl px-2 text-[11px] font-bold text-zinc-700 focus:outline-none focus:border-sky-500 appearance-none cursor-pointer"
+                    >
+                      <optgroup label="Moda y Textil">
+                        <option value="vestir">👕 Ropa Adulto</option>
+                        <option value="calzado">👟 Calzado Adulto</option>
+                        <option value="infantil_ropa">👶 Ropa Infantil</option>
+                        <option value="infantil_calzado">🍼 Calzado Infantil</option>
+                        <option value="interior_lenceria">👙 Ropa Interior</option>
+                        <option value="joyeria_relojes">💍 Joyería y Relojes</option>
+                      </optgroup>
+                      <optgroup label="Salud y Deporte">
+                        <option value="ortopedia">🏥 Ortopedia</option>
+                        <option value="deporte_fitness">🏋️‍♂️ Equipamiento Deportivo</option>
+                      </optgroup>
+                      <optgroup label="Hogar y Vida">
+                        <option value="hogar_textil">🛏️ Textiles y Camas</option>
+                        <option value="hogar_muebles">🪑 Mobiliario</option>
+                        <option value="cocina_comedor">🍽️ Vajilla y Cocina</option>
+                      </optgroup>
+                      <optgroup label="Tecnología y Misceláneos">
+                        <option value="tecnologia_acc">🔌 Tecnología y Accesorios</option>
+                        <option value="ferreteria_herramientas">🔧 Ferretería</option>
+                        <option value="belleza_cosmeticos">✨ Belleza y Cosméticos</option>
+                      </optgroup>
+                    </select>
+
+                    <div className="col-span-7 flex gap-1">
+                      <input 
+                        type="text"
+                        value={sizeInput}
+                        onChange={(e) => setSizeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddSize(sizeInput);
+                          }
+                        }}
+                        className="w-full h-9 bg-white border border-zinc-200 rounded-xl px-2.5 text-[11px] font-medium focus:outline-none focus:border-sky-500 uppercase placeholder:normal-case" 
+                        placeholder="Otra medida..." 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddSize(sizeInput)}
+                        className="h-9 px-2.5 bg-zinc-950 text-white rounded-xl text-[11px] font-black hover:bg-zinc-800 transition-all active:scale-95"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Renderizado Condicional Inteligente (Solo ocupa 1 línea de altura con scroll interno) */}
+                  <div className="bg-white border border-zinc-200/60 p-2 rounded-xl">
+                    
+                    {/* MODA Y TEXTIL */}
+                    {activeSizeSegment === 'vestir' && (
+                      <div className="flex flex-wrap gap-1 items-center justify-between">
+                        <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                          {['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Unitalla'].map((p) => (
+                            <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                          ))}
+                        </div>
+                        <button type="button" onClick={() => ['XS', 'S', 'M', 'L', 'XL'].forEach(t => handleAddSize(t))} className="text-[9px] font-black text-sky-600 hover:text-sky-700 whitespace-nowrap px-1">Set completo</button>
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'calzado' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'infantil_ropa' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['0-3M', '3-6M', '6-12M', '12-18M', '2T', '3T', '4T', 'Talla 6', 'Talla 8', 'Talla 10'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'infantil_calzado' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['16', '18', '20', '22', '24', '26', '28', '30', '32', '34'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'interior_lenceria' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['32A', '32B', '34B', '34C', '36C', '36D', 'Boxer S', 'Boxer M', 'Boxer L'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'joyeria_relojes' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['Talla 6', 'Talla 7', 'Talla 8', 'Talla 9', '38mm', '40mm', '42mm', '44mm'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* SALUD Y DEPORTE */}
+                    {activeSizeSegment === 'ortopedia' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['Estándar', 'Pediátrica', 'Muslo Ancho', 'Ajustable', '20-25 cm', '26-30 cm', '31-35 cm'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'deporte_fitness' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['5 lb', '10 lb', '15 lb', '20 lb', 'Suave', 'Media', 'Fuerte'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* HOGAR Y VIDA */}
+                    {activeSizeSegment === 'hogar_textil' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['Twin', 'Full', 'Queen', 'King', 'California King', '140x220cm'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'hogar_muebles' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['Pequeño', 'Mediano', 'Grande', 'Extra Grande'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'cocina_comedor' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['11oz', '15oz', '500ml', '1 Litro', '4 piezas', '12 piezas'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* TECNOLOGÍA Y MISC */}
+                    {activeSizeSegment === 'tecnologia_acc' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['13"', '14"', '15.6"', '1m', '2m', 'Funda Estándar', 'Pro', 'Pro Max'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'ferreteria_herramientas' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['1/4"', '1/2"', '3/4"', '8mm', '10mm', '12mm'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+
+                    {activeSizeSegment === 'belleza_cosmeticos' && (
+                      <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto custom-scrollbar">
+                        {['15ml', '30ml', '50ml', '100ml', '250ml', '500ml'].map((p) => (
+                          <button key={p} type="button" onClick={() => handleAddSize(p)} className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 rounded-md cursor-pointer">{p}</button>
+                        ))}
+                      </div>
+                    )}
+                    
+                  </div>
+
+                  {/* CHIPS SELECCIONADOS */}
+                  {sizes.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-2 border-t border-zinc-200/60 max-h-20 overflow-y-auto custom-scrollbar">
+                      {sizes.map((size, index) => (
+                        <div 
+                          key={index}
+                          className="flex items-center gap-1 bg-zinc-900 text-white pl-2 pr-0.5 py-0.5 rounded-md text-[10px] font-black shadow-xs animate-in zoom-in-95 duration-150"
+                        >
+                          <span>{size}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSize(index)}
+                            className="p-0.5 hover:bg-zinc-700 rounded text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                          >
+                            <X size={10} strokeWidth={3} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                </div>
+              </div>
+
+            </div>
+
+            {/* COLUMNA 2: Estética y Multimedia */}
+            <div className="space-y-5">
               <div>
                 <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Variantes de Color</label>
                 <div className="p-4 bg-zinc-50/50 border border-zinc-200 rounded-2xl space-y-3">
@@ -435,16 +731,14 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                     </button>
                   </div>
 
-                  {/* Sugerencias rápidas estéticas (Con contenedor scrollable sutil y elegante) */}
+                  {/* Sugerencias rápidas estéticas */}
                   <div className="space-y-1.5">
                     <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider block">
                       Paleta Base Disponible:
                     </span>
                     
-                    {/* CONTENEDOR CON SCROLL SUTIL: Altura controlada y scrollbar fina */}
                     <div className="max-h-27.5 overflow-y-auto pr-1 flex flex-wrap gap-1.5 items-start scrollbar-thin scrollbar-thumb-zinc-200 scrollbar-track-transparent">
                       {(() => {
-                        // 1. Filtramos el mapa para quedarnos solo con un nombre único por cada código HEX
                         const vistasUnicas: string[] = [];
                         const coloresFiltrados = Object.keys(COLOR_MAP).filter((name) => {
                           const hex = COLOR_MAP[name];
@@ -455,7 +749,6 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                           return false;
                         });
 
-                        // 2. Mapeamos toda la variedad de colores de tu tabla
                         return coloresFiltrados.map((colorKey) => {
                           const hexColor = COLOR_MAP[colorKey];
                           
@@ -507,32 +800,6 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                   ) : (
                     <p className="text-[10px] text-zinc-400 italic pt-1 text-center">Sin variantes de color especificadas.</p>
                   )}
-                </div>
-              </div>
-            </div>
-
-            {/* COLUMNA DERECHA: Descripción y Multimedia */}
-            <div className="space-y-5">
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                  Descripción
-                </label>
-                
-                <div className="border border-zinc-200 rounded-2xl bg-white overflow-hidden shadow-sm">
-                  <MenuBar editor={editor} />
-                  
-                  <div className="relative">
-                    <div className="absolute top-3 left-3 pointer-events-none z-10">
-                      <AlignLeft className="h-4 w-4 text-zinc-400" />
-                    </div>
-                    
-                    <div className="min-h-[150px] max-h-[300px] overflow-y-auto">
-                      <EditorContent
-                        editor={editor}
-                        className="prose prose-sm max-w-none p-3 pl-10 focus:outline-none"
-                      />
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -592,10 +859,37 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
               </div>
             </div>
 
+            {/* COLUMNA 3: Detalles (Descripción con mucho espacio) */}
+            <div className="space-y-5 h-full">
+              <div className="space-y-1.5 h-full flex flex-col">
+                <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                  Descripción
+                </label>
+                
+                {/* MODIFICADO: Aumentada la altura mínima (min-h) para aprovechar el espacio de las 3 columnas */}
+                <div className="border border-zinc-200 rounded-2xl bg-white overflow-hidden shadow-sm flex flex-col flex-1">
+                  <MenuBar editor={editor} />
+                  
+                  <div className="relative flex-1">
+                    <div className="absolute top-3 left-3 pointer-events-none z-10">
+                      <AlignLeft className="h-4 w-4 text-zinc-400" />
+                    </div>
+                    
+                    <div className="min-h-[250px] lg:min-h-[380px] max-h-[450px] overflow-y-auto">
+                      <EditorContent
+                        editor={editor}
+                        className="prose prose-sm max-w-none p-3 pl-10 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* ACCIONES DEL FORMULARIO */}
-          <div className="flex gap-3 pt-6 mt-2 border-t border-zinc-100">
+          <div className="flex gap-3 pt-6 mt-4 border-t border-zinc-100">
             <button 
               type="button" 
               onClick={onClose}

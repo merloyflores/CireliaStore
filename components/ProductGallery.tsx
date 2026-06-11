@@ -11,7 +11,7 @@ interface ProductGalleryProps {
 
 export default function ProductGallery({ mainImage, productName, media }: ProductGalleryProps) {
   // Combinamos la imagen principal con las de la galería de la base de datos
-  const allImages = [mainImage, ...media.map((m) => m.url)].filter(Boolean);
+  const allImages = Array.from(new Set([mainImage, ...media.map((m) => m.url)].filter(Boolean)));
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const handlePrev = () => {
@@ -25,7 +25,7 @@ export default function ProductGallery({ mainImage, productName, media }: Produc
   return (
     <div className="flex flex-col md:flex-row-reverse gap-6">
       {/* CONTENEDOR DE IMAGEN PRINCIPAL CON NAVEGACIÓN */}
-      <div className="relative flex-1 aspect-4/5 bg-zinc-50 rounded-[2.5rem] overflow-hidden border border-zinc-100 group shadow-sm">
+      <div className="relative flex-1 aspect-4/5 bg-zinc-50 rounded-2xl overflow-hidden border border-zinc-100 group shadow-sm">
         {allImages.length > 0 ? (
           <img
             src={allImages[currentIndex]}

@@ -17,6 +17,7 @@ const COLOR_MAP: Record<string, string> = {
   'oro rosa': '#B76E79', 'rose gold': '#B76E79',
   'bronce': '#CD7F32', 'bronze': '#CD7F32',
   'cobre': '#B87333', 'copper': '#B87333',
+  'champagne': '#F7E7CE',
 
   // --- LOS MINIMALISTAS DE FÁBRICA ---
   'crudo': '#FDFBF7', 'raw': '#FDFBF7',
@@ -42,6 +43,7 @@ const COLOR_MAP: Record<string, string> = {
   'naranja': '#F97316', 'orange': '#F97316',
   'amarillo': '#EAB308', 'yellow': '#EAB308',
   'púrpura': '#A855F7', 'purple': '#A855F7', 'morado': '#8B5CF6',
+  'ciruela': '#8E4585', 'plum': '#8E4585',
 
   // --- PALETA CÁLIDA, MUEBLES Y TEXTILES ---
   'marrón': '#78350F', 'brown': '#78350F', 'cafe': '#78350F', 'café': '#78350F',
@@ -51,6 +53,7 @@ const COLOR_MAP: Record<string, string> = {
   'vino': '#7F1D1D', 'burgundy': '#7F1D1D', 'burdeos': '#7F1D1D',
   'coral': '#F87171',
   'salmón': '#FA8072', 'salmon': '#FA8072',
+  'durazno': '#FFDAB9', 'peach': '#FFDAB9',
   'fucsia': '#D946EF', 'fuchsia': '#D946EF',
 
   // --- PALETA BOTÁNICA, NÓRDICA Y OCÉANO ---
@@ -62,7 +65,11 @@ const COLOR_MAP: Record<string, string> = {
   'azul marino': '#1E3A8A',
   'índigo': '#4338CA', 'indigo': '#4338CA',
   'lavanda': '#E9D5FF', 'lavender': '#E9D5FF',
-  'lila': '#F3E8FF', 'lilac': '#F3E8FF'
+  'lila': '#F3E8FF', 'lilac': '#F3E8FF',
+  'musgo': '#8A9A5B', 'moss': '#8A9A5B',
+  'salvia': '#9DC183', 'sage': '#9DC183',
+  'bosque': '#228B22', 'forest': '#228B22',
+  'denim': '#1560BD'
 };
 
 export default function AdminDashboard() {
@@ -271,15 +278,6 @@ export default function AdminDashboard() {
           >
             <Plus size={18} /> Añadir Producto
           </button>
-
-          {/* BOTÓN DE CERRAR SESIÓN AÑADIDO AQUÍ */}
-          <button 
-            onClick={handleLogout}
-            title="Cerrar sesión"
-            className="flex-1 sm:flex-none px-4 h-12 rounded-xl font-bold flex items-center justify-center gap-2 border bg-white border-zinc-200 text-zinc-500 hover:border-red-200 hover:text-red-600 hover:bg-red-50 transition-all text-sm shadow-sm"
-          >
-            <LogOut size={16} /> <span className="hidden sm:inline">Salir</span>
-          </button>
         </div>
       </div>
 
@@ -355,11 +353,11 @@ export default function AdminDashboard() {
                       />
                     </th>
                     <th className="py-4 px-6">Producto</th>
-                    <th className="py-4 px-6 max-[942px]:hidden">Categoría</th>
-                    <th className="py-4 px-6 max-[820px]:hidden">Variantes de Color</th>
-                    <th className="py-4 px-6 max-[724px]:hidden">Precio</th>
+                    <th className="py-4 px-6 max-[1175px]:hidden">Categoría</th>
+                    <th className="py-4 px-6 max-[1055px]:hidden">Variantes</th>
+                    <th className="py-4 px-6 max-[877px]:hidden">Precio</th>
                     <th className="py-4 px-6 max-[590px]:hidden">Stock</th>
-                    <th className="py-4 px-6 text-right max-[468px]:px-2">Acciones</th>
+                    <th className="py-4 px-6 text-right hidden md:table-cell">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 text-sm font-medium">
@@ -375,48 +373,62 @@ export default function AdminDashboard() {
                         />
                       </td>
 
-                      <td className="py-4 px-6 flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center text-zinc-400">
-                          {product.image_url ? <img src={product.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={18} />}
+                      {/* CELDA PRODUCTO: Incluye los botones duplicados para móvil */}
+                      <td className="py-4 px-6 flex flex-col md:flex-row items-start md:items-center gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center text-zinc-400">
+                            {product.image_url ? <img src={product.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={18} />}
+                          </div>
+                          <div>
+                            <p className="font-bold text-zinc-950">{product.name}</p>
+                            <div 
+                              className="text-xs text-zinc-400 line-clamp-1 max-w-xs prose prose-sm **:inline **:m-0"
+                              dangerouslySetInnerHTML={{ __html: product.description }} 
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-zinc-950">{product.name}</p>
-                          <div 
-                            className="text-xs text-zinc-400 line-clamp-1 max-w-xs prose prose-sm **:inline **:m-0"
-                            dangerouslySetInnerHTML={{ __html: product.description }} 
-                          />
+                        
+                        {/* BOTONES MÓVIL (Solo aparecen aquí cuando la pantalla es pequeña) */}
+                        <div className="flex md:hidden gap-1 w-full mt-2">
+                          <button onClick={() => { setProductToEditSpecs(product); setIsSpecsModalOpen(true); }} className="p-2 text-zinc-600 bg-zinc-100 rounded-lg flex-1 flex justify-center"><Settings2 size={16} /></button>
+                          <button onClick={() => openModal(product)} className="p-2 text-zinc-600 bg-zinc-100 rounded-lg flex-1 flex justify-center"><Edit3 size={16} /></button>
+                          <button onClick={() => handleDelete(product)} className="p-2 text-red-500 bg-red-50 rounded-lg flex-1 flex justify-center"><Trash2 size={16} /></button>
                         </div>
                       </td>
                       
-                      <td className="py-4 px-6 text-zinc-500 capitalize max-[942px]:hidden">
+                      <td className="py-4 px-6 text-zinc-500 capitalize max-[1175px]:hidden">
                         {product.categories?.name || '-'}
                       </td>
 
-                      <td className="py-4 px-6 max-[820px]:hidden">
-                        {product.colors && product.colors.length > 0 ? (
-                          <div className="flex items-center gap-1.5">
-                            {/* APLICADO ORDEN ALFABÉTICO EN LOS COLORES ANTES DE MAPEAR */}
-                            {[...product.colors]
-                              .sort((a, b) => a.localeCompare(b))
-                              .map((colorName: string) => {
+                      <td className="py-4 px-6 max-[1055px]:hidden">
+                        <div className="flex flex-col gap-2">
+                          {product.colors && product.colors.length > 0 ? (
+                            <div className="flex items-center gap-1.5">
+                              {[...product.colors].sort((a, b) => a.localeCompare(b)).map((colorName: string) => {
                                 const cleanKey = colorName.trim().toLowerCase();
                                 const hexColor = COLOR_MAP[cleanKey] || '#D1D5DB'; 
-                                return (
-                                  <div
-                                    key={colorName}
-                                    title={colorName}
-                                    className="w-4 h-4 rounded-full border border-zinc-300 shadow-sm shrink-0"
-                                    style={{ backgroundColor: hexColor }}
-                                  />
-                                );
-                            })}
-                          </div>
-                        ) : (
-                          <span className="text-zinc-300 text-xs italic">Sin variantes</span>
-                        )}
+                                return <div key={colorName} title={colorName} className="w-4 h-4 rounded-full border border-zinc-300 shadow-sm shrink-0" style={{ backgroundColor: hexColor }} />;
+                              })}
+                            </div>
+                          ) : null}
+                          {product.sizes && product.sizes.length > 0 ? (
+                            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{product.sizes.join(', ')}</div>
+                          ) : (
+                            (!product.colors || product.colors.length === 0) && <span className="text-zinc-300 text-xs italic">Sin variantes</span>
+                          )}
+                        </div>
                       </td>
 
-                      <td className="py-4 px-6 font-bold text-zinc-950 max-[724px]:hidden">₡{product.price?.toLocaleString()}</td>
+                      <td className="py-4 px-6 max-[877px]:hidden">
+                        {product.is_promo ? (
+                          <div className="flex flex-col">
+                            <span className="text-zinc-400 line-through font-normal text-xs">₡{product.price?.toLocaleString()}</span>
+                            <span className="text-green-600 font-bold">₡{product.promo_price?.toLocaleString()}</span>
+                          </div>
+                        ) : (
+                          <span className="font-bold text-zinc-950">₡{product.price?.toLocaleString()}</span>
+                        )}
+                      </td>
                       
                       <td className="py-4 px-6 max-[590px]:hidden">
                         <span className={`px-2.5 py-1 rounded-md text-xs font-black ${product.stock > 5 ? 'bg-zinc-100 text-zinc-700' : 'bg-red-50 text-red-600'}`}>
@@ -424,44 +436,17 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       
-                      <td className="py-4 px-6 text-right max-[468px]:px-2">
-                        {/* El contenedor ahora se convierte en una mini tarjeta gris unificada en móvil */}
-                        <div className="flex justify-end max-[468px]:grid max-[468px]:grid-cols-2 max-[468px]:w-full max-[468px]:bg-zinc-100/80 max-[468px]:p-1.5 max-[468px]:rounded-xl max-[468px]:justify-items-stretch gap-1.5">
-                          
-                          {/* BOTÓN ESPECIFICACIONES */}
-                          <button 
-                            onClick={() => {
-                              setProductToEditSpecs(product);
-                              setIsSpecsModalOpen(true);
-                            }}
-                            className="p-2 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-all flex items-center justify-center max-[468px]:bg-white max-[468px]:text-zinc-600 max-[468px]:shadow-sm max-[468px]:h-9"
-                            title="Editar especificaciones"
-                          >
-                            <Settings2 size={16} />
-                          </button>
-
-                          {/* BOTÓN EDITAR */}
-                          <button 
-                            onClick={() => openModal(product)} 
-                            className="p-2 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition-all flex items-center justify-center max-[468px]:bg-white max-[468px]:text-zinc-600 max-[468px]:shadow-sm max-[468px]:h-9"
-                          >
-                            <Edit3 size={16} />
-                          </button>
-                          
-                          {/* BOTÓN ELIMINAR (Ocupa las 2 columnas abajo para cerrar el diseño simétricamente) */}
-                          <button 
-                            onClick={() => handleDelete(product)} 
-                            className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all flex items-center justify-center max-[468px]:bg-white max-[468px]:text-red-500 max-[468px]:shadow-sm max-[468px]:h-9 max-[468px]:col-span-2"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-
+                      {/* CELDA ACCIONES: Oculta en móvil (md:hidden) para no duplicar */}
+                      <td className="py-4 px-6 text-right hidden md:table-cell">
+                        <div className="flex justify-end gap-1.5">
+                          <button onClick={() => { setProductToEditSpecs(product); setIsSpecsModalOpen(true); }} className="p-2 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-all" title="Editar especificaciones"><Settings2 size={16} /></button>
+                          <button onClick={() => openModal(product)} className="p-2 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition-all"><Edit3 size={16} /></button>
+                          <button onClick={() => handleDelete(product)} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={16} /></button>
                         </div>
                       </td>
                     </tr>
                   ))}
                   
-                  {/* MENSAJE SI NO HAY RESULTADOS */}
                   {paginatedProducts.length === 0 && (
                     <tr>
                       <td colSpan={7} className="py-10 text-center text-zinc-400">

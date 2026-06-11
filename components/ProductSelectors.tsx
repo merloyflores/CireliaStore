@@ -1,7 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import { Share2, CheckCircle2, CreditCard } from 'lucide-react';
+import { 
+  Share2, 
+  CheckCircle2, 
+  CreditCard, 
+  Smartphone, 
+  Wallet, 
+  Banknote, 
+  Building2 
+} from 'lucide-react';
+
+// --- CONFIGURACIÓN DE MÉTODOS DE PAGO ---
+const PAYMENT_METHODS = [
+  { id: 'sinpe', label: 'SINPE Móvil', icon: Smartphone },
+  { id: 'card', label: 'Tarjetas', icon: CreditCard },
+  { id: 'paypal', label: 'PayPal', icon: Wallet },
+  { id: 'cash', label: 'Efectivo', icon: Banknote },
+  { id: 'emma', label: 'Emma Pay', icon: Building2 },
+];
 
 // --- NUESTRO MAPA DE COLORES COMPLETO ---
 const COLOR_MAP: Record<string, string> = {
@@ -11,6 +28,7 @@ const COLOR_MAP: Record<string, string> = {
   'oro rosa': '#B76E79', 'rose gold': '#B76E79',
   'bronce': '#CD7F32', 'bronze': '#CD7F32',
   'cobre': '#B87333', 'copper': '#B87333',
+  'champagne': '#F7E7CE',
 
   // --- LOS MINIMALISTAS DE FÁBRICA ---
   'crudo': '#FDFBF7', 'raw': '#FDFBF7',
@@ -36,6 +54,7 @@ const COLOR_MAP: Record<string, string> = {
   'naranja': '#F97316', 'orange': '#F97316',
   'amarillo': '#EAB308', 'yellow': '#EAB308',
   'púrpura': '#A855F7', 'purple': '#A855F7', 'morado': '#8B5CF6',
+  'ciruela': '#8E4585', 'plum': '#8E4585',
 
   // --- PALETA CÁLIDA, MUEBLES Y TEXTILES ---
   'marrón': '#78350F', 'brown': '#78350F', 'cafe': '#78350F', 'café': '#78350F',
@@ -45,6 +64,7 @@ const COLOR_MAP: Record<string, string> = {
   'vino': '#7F1D1D', 'burgundy': '#7F1D1D', 'burdeos': '#7F1D1D',
   'coral': '#F87171',
   'salmón': '#FA8072', 'salmon': '#FA8072',
+  'durazno': '#FFDAB9', 'peach': '#FFDAB9',
   'fucsia': '#D946EF', 'fuchsia': '#D946EF',
 
   // --- PALETA BOTÁNICA, NÓRDICA Y OCÉANO ---
@@ -56,56 +76,75 @@ const COLOR_MAP: Record<string, string> = {
   'azul marino': '#1E3A8A',
   'índigo': '#4338CA', 'indigo': '#4338CA',
   'lavanda': '#E9D5FF', 'lavender': '#E9D5FF',
-  'lila': '#F3E8FF', 'lilac': '#F3E8FF'
+  'lila': '#F3E8FF', 'lilac': '#F3E8FF',
+  'musgo': '#8A9A5B', 'moss': '#8A9A5B',
+  'salvia': '#9DC183', 'sage': '#9DC183',
+  'bosque': '#228B22', 'forest': '#228B22',
+  'denim': '#1560BD'
 };
 
 interface ProductSelectorsProps {
-  colors?: string[] | null;
+  colors?: string[] | string | null;
+  sizes?: string[] | string | null;
   isExpressDelivery?: boolean;
 }
 
-export default function ProductSelectors({ colors = [], isExpressDelivery = true }: ProductSelectorsProps) {
-  const hasColors = colors && colors.length > 0;
-  const [selectedColor, setSelectedColor] = useState<string | null>(hasColors ? colors[0] : null);
+export default function ProductSelectors({ 
+  colors, 
+  sizes, 
+  isExpressDelivery = true 
+}: ProductSelectorsProps) {
+  
+  // --- PROCESAMIENTO SIMPLE DE TEXTO (SEPARADO POR COMAS) ---
+  
+  // Procesamos colores: si es array se queda igual, si es string TEXT se separa por comas
+  const safeColors = Array.isArray(colors) 
+    ? colors 
+    : (typeof colors === 'string' && colors.trim() !== '')
+      ? colors.split(',').map(c => c.trim())
+      : [];
+
+  // Procesamos tallas: exactamento la misma lógica simple de TEXT separada por comas
+  const safeSizes = Array.isArray(sizes)
+    ? sizes
+    : (typeof sizes === 'string' && sizes.trim() !== '')
+      ? sizes.split(',').map(s => s.trim())
+      : [];
+
+  const hasColors = safeColors.length > 0;
+  const hasSizes = safeSizes.length > 0;
+  
+  const [selectedColor, setSelectedColor] = useState<string | null>(hasColors ? safeColors[0] : null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(hasSizes ? safeSizes[0] : null);
 
   const handleShare = async () => {
     if (typeof window !== 'undefined' && navigator.share) {
       try {
-        await navigator.share({
-          title: document.title,
-          url: window.location.href,
-        });
-      } catch (err) {
-        console.log('Error al compartir', err);
-      }
+        await navigator.share({ title: document.title, url: window.location.href });
+      } catch (err) { console.log('Error al compartir', err); }
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('¡Enlace de producto copiado al portapapeles!');
+      alert('¡Enlace de producto copiado!');
     }
   };
-
+  
   return (
-    <div className="space-y-8 my-8 border-t border-b border-zinc-100 py-8">
-      {/* SECTOR DE COLOR: Solo se renderiza si el producto posee variantes de color */}
+    <div className="space-y-8 my-8 border-t border-b border-zinc-200 py-8">
+      
+      {/* SECTOR DE COLOR */}
       {hasColors && (
         <div>
-          <div className="flex justify-between items-center mb-3">
-            <label className="text-[11px] font-black text-zinc-400 uppercase tracking-widest">
-              Color seleccionado: <span className="text-zinc-950 font-black capitalize">{selectedColor}</span>
+          <div className="flex justify-between items-center mb-4">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+              Color: <span className="text-zinc-950 capitalize">{selectedColor}</span>
             </label>
-            <button 
-              type="button"
-              onClick={handleShare}
-              className="flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-950 transition-colors"
-            >
-              <Share2 size={14} /> Compartir
+            <button type="button" onClick={handleShare} className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 hover:text-zinc-950 transition-colors uppercase tracking-widest">
+              <Share2 size={12} /> Compartir
             </button>
           </div>
           
-          {/* AQUÍ ESTÁ EL CAMBIO DE LOS BOTONES CON EL CÍRCULO PRO */}
           <div className="flex flex-wrap gap-2">
-            {colors.map((color) => {
-              // Buscamos el color real en minúsculas en el mapa. Si no existe, ponemos un gris sutil por defecto
+            {safeColors.map((color) => {
               const hexColor = COLOR_MAP[color.toLowerCase()] || '#E4E4E7';
               const isSelected = selectedColor === color;
 
@@ -114,21 +153,16 @@ export default function ProductSelectors({ colors = [], isExpressDelivery = true
                   key={color}
                   type="button"
                   onClick={() => setSelectedColor(color)}
-                  className={`h-11 px-4 rounded-xl text-xs font-bold transition-all border flex items-center gap-2.5 cursor-pointer active:scale-95 ${
+                  className={`h-10 px-3 rounded-lg text-xs font-bold transition-all border-2 flex items-center gap-2 cursor-pointer active:scale-95 ${
                     isSelected
-                      ? 'bg-zinc-950 text-white border-zinc-950 shadow-md'
-                      : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400 hover:bg-zinc-50'
+                      ? 'border-zinc-950 text-zinc-950'
+                      : 'border-zinc-200 text-zinc-400 hover:border-zinc-400'
                   }`}
                 >
-                  {/* El círculo con el color del mapa */}
                   <span 
-                    className={`w-3.5 h-3.5 rounded-full shrink-0 border transition-transform ${
-                      isSelected ? 'border-white/30 scale-110' : 'border-black/10'
-                    }`}
+                    className="w-3 h-3 rounded-full border border-black/10"
                     style={{ backgroundColor: hexColor }}
                   />
-                  
-                  {/* El texto del color con la primera letra en Mayúscula */}
                   <span className="capitalize">{color}</span>
                 </button>
               );
@@ -137,38 +171,87 @@ export default function ProductSelectors({ colors = [], isExpressDelivery = true
         </div>
       )}
 
-      {/* Si el producto NO tiene colores */}
-      {!hasColors && (
+      {/* SECTOR DE TALLAS */}
+      {hasSizes && (
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+              Talla: <span className="text-zinc-950">{selectedSize}</span>
+            </label>
+            {!hasColors && (
+               <button type="button" onClick={handleShare} className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 hover:text-zinc-950 transition-colors uppercase tracking-widest">
+                 <Share2 size={12} /> Compartir
+               </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {safeSizes.map((size) => {
+              const isSelected = selectedSize === size;
+              return (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => setSelectedSize(size)}
+                  className={`h-10 min-w-[2.5rem] px-3 rounded-lg text-xs font-black transition-all border-2 flex items-center justify-center cursor-pointer active:scale-95 ${
+                    isSelected
+                      ? 'border-zinc-950 text-zinc-950'
+                      : 'border-zinc-200 text-zinc-400 hover:border-zinc-400'
+                  }`}
+                >
+                  {size}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* FALLBACK SI NO HAY VARIANTES */}
+      {!hasColors && !hasSizes && (
         <div className="flex justify-end">
           <button 
             type="button"
             onClick={handleShare}
-            className="flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-950 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-950 transition-colors uppercase tracking-widest"
           >
-            <Share2 size={14} /> Compartir Producto
+            <Share2 size={12} /> Compartir Producto
           </button>
         </div>
       )}
 
-      {/* COMPONENTE LOGÍSTICA DINÁMICA */}
-      <div className="bg-zinc-50/50 rounded-2xl p-4 border border-zinc-100 space-y-3">
+      {/* COMPONENTE LOGÍSTICA (Borde puro, sin fondo) */}
+      <div className="rounded-xl p-4 border-2 border-zinc-100 space-y-3">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 text-emerald-600">
-            <CheckCircle2 size={16} fill="currentColor" className="text-white" />
+            <CheckCircle2 size={16} />
           </div>
-          <div className="text-xs font-semibold text-zinc-700">
+          <div className="text-xs font-medium text-zinc-600">
             {isExpressDelivery ? (
-              <p>Entrega <span className="text-emerald-600 font-extrabold uppercase tracking-tight">Mañana mismo</span> disponible en tu ubicación.</p>
+              <p>Entrega <span className="text-zinc-950 font-black uppercase tracking-tight">Mañana mismo</span> disponible.</p>
             ) : (
-              <p>Entrega estimada regular de 2 a 4 días hábiles.</p>
+              <p>Entrega estándar: 2 a 4 días hábiles.</p>
             )}
           </div>
         </div>
 
-        {/* MÉTODOS DE PAGO */}
-        <div className="flex items-center gap-2 pt-2 border-t border-zinc-200/60 text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-          <CreditCard size={12} />
-          <span>Pagos Seguros: Sinpe Móvil, Tarjetas de Crédito y Efectivo</span>
+        {/* Métodos de pago (Layout horizontal "A lo largo") */}
+        <div className="pt-3 border-t border-zinc-100">
+          <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest mb-3">
+            Métodos de pago aceptados
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {PAYMENT_METHODS.map((method) => (
+              <div 
+                key={method.id} 
+                className="flex items-center gap-2 border border-zinc-100 rounded-lg py-1.5 px-3 hover:border-zinc-200 transition-colors bg-white/50"
+              >
+                <method.icon size={13} className="text-zinc-400" />
+                <span className="text-[10px] font-bold text-zinc-600 whitespace-nowrap">
+                  {method.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

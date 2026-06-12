@@ -190,7 +190,7 @@ export default function Home() {
               {/* AJUSTE 3: Quitamos el py-4 extra que tenía este div para no sumar más espacio */}
               <div>
                 <PromoBanner 
-                  image="/banner.png" 
+                  image="/banner1.png" 
                   title="Descuentos Goleadores" 
                   subtitle="Aprovecha hasta un 40% de descuento en artículos deportivos" 
                   link="/shop?category=Deportes"

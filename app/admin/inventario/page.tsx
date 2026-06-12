@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 // Importamos ChevronLeft y ChevronRight para los botones de paginación
-import { Zap, Settings2, Plus, Trash2, Edit3, Image as ImageIcon, Loader2, LogOut, MessageSquare, Star, X, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Tag, Zap, Settings2, Plus, Trash2, Edit3, Image as ImageIcon, Loader2, LogOut, MessageSquare, Star, X, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ProductModal from '../../../components/ProductModal'; 
 import ChatHistoryView from '@/components/ChatHistoryView'; 
 import ProductFeedbackView from '@/components/ProductFeedbackView';
 import SpecManagerModal from '@/components/SpecManagerModal';
 import ProductFeaturedModal from '@/components/ProductFeaturedModal';
+import BulkPromoModal from '@/components/BulkPromoModal';
 
 const COLOR_MAP: Record<string, string> = {
   // --- TUS METÁLICOS Y VALIOSOS ---
@@ -81,7 +82,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [reviews, setReviews] = useState<any[]>([]);
-  const [chats, setChats] = useState<any[]>([]); 
+  const [chats, setChats] = useState<any[]>([]);
+  const [isBulkPromoOpen, setIsBulkPromoOpen] = useState(false); 
   
   const [activeModal, setActiveModal] = useState<'chats' | 'feedback' | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -150,6 +152,24 @@ export default function AdminDashboard() {
 
   const handleSuccess = () => {
     setTimeout(fetchProducts, 500);
+  };
+
+  const handleApplyBulkPromos = async (promoData: any) => {
+    try {
+      // AQUÍ VA TU LLAMADA A LA API (fetch o axios a tu backend)
+      // console.log("Datos a enviar:", promoData);
+      
+      // Simulación
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Una vez éxito, limpias selección, cierras modal y recargas datos
+      // setSelectedProducts([]);
+      // fetchProducts(); 
+      alert('¡Promociones actualizadas con éxito!');
+    } catch (error) {
+      console.error("Error aplicando promos masivas:", error);
+      alert('Hubo un error al aplicar las ofertas.');
+    }
   };
   
   const openModal = (product: any = null) => {
@@ -247,7 +267,7 @@ export default function AdminDashboard() {
     }
   };
 
-  return (
+return (
     <div className="min-h-screen bg-zinc-50 p-6 sm:p-10 text-zinc-950 w-full overflow-x-hidden">
       
       {/* HEADER DEL DASHBOARD */}
@@ -280,6 +300,7 @@ export default function AdminDashboard() {
           >
             <Star size={18} /> Destacados
           </button>
+          
           <button 
             onClick={() => openModal()}
             className="flex-1 sm:flex-none bg-zinc-950 text-white px-5 h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-sky-600 transition-all active:scale-95 text-sm shadow-md"
@@ -339,6 +360,28 @@ export default function AdminDashboard() {
         )}
       </div>
 
+      {/* ========================================================================= */}
+      {/* AJUSTE 1: BARRA DE OFERTAS MASIVAS (Mírala aquí abajo de los filtros)     */}
+      {/* ========================================================================= */}
+      {selectedProducts.length > 0 && (
+        <div className="mb-6 p-4 bg-sky-50 border border-sky-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <div className="bg-sky-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm">
+              {selectedProducts.length}
+            </div>
+            <span className="font-bold text-sky-950 text-sm">Productos seleccionados para edición masiva</span>
+          </div>
+          
+          <button 
+            onClick={() => setIsBulkPromoOpen(true)}
+            className="flex items-center justify-center gap-2 px-5 h-11 bg-sky-600 text-white rounded-xl font-bold text-sm hover:bg-sky-700 transition-colors shadow-md active:scale-95"
+          >
+            <Tag size={16} />
+            Gestionar Ofertas Masivas
+          </button>
+        </div>
+      )} 
+
       {/* TABLA PRINCIPAL */}
       {loading ? (
         <div className="flex flex-col items-center justify-center h-64 text-zinc-400 gap-3">
@@ -348,7 +391,6 @@ export default function AdminDashboard() {
         <>
           <div className="bg-white border border-zinc-100 rounded-3xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              {/* AJUSTE 1: max-[927px]:table-fixed obliga a la tabla a respetar el límite de la pantalla. Quitamos el min-w-200. */}
               <table className="w-full text-left border-collapse max-[927px]:table-fixed">
                 <thead>
                   <tr className="bg-zinc-50 border-b border-zinc-100 text-zinc-400 text-[11px] font-black uppercase tracking-widest">
@@ -382,7 +424,6 @@ export default function AdminDashboard() {
                         />
                       </td>
 
-                      {/* AJUSTE 2: padding adaptativo y flex contenido con w-full y min-w-0 */}
                       <td className="py-4 px-6 max-[927px]:px-4">
                         <div className="flex flex-col min-[928px]:flex-row items-start min-[928px]:items-center gap-4 w-full min-w-0">
                           <div className="flex items-center gap-4 w-full min-w-0">
@@ -396,7 +437,6 @@ export default function AdminDashboard() {
                               )}
                             </div>
                             
-                            {/* AJUSTE 3: min-w-0 aquí evita que los títulos o textos largos inflen la tabla */}
                             <div className="min-w-0 flex-1">
                               <p className="font-bold text-zinc-950 truncate">{product.name}</p>
                               <div 
@@ -479,7 +519,6 @@ export default function AdminDashboard() {
           {/* SECCIÓN DE PAGINACIÓN */}
           {filteredProducts.length > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 bg-white border border-zinc-100 rounded-2xl shadow-sm">
-              
               <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-zinc-500 w-full sm:w-auto text-center sm:text-left">
                 <span>
                   Mostrando del <span className="font-bold text-zinc-950">{startIndex + 1}</span> al <span className="font-bold text-zinc-950">{Math.min(startIndex + itemsPerPage, filteredProducts.length)}</span> de <span className="font-bold text-zinc-950">{filteredProducts.length}</span> resultados
@@ -553,6 +592,7 @@ export default function AdminDashboard() {
           productToEdit={editingProduct} 
         />
       )}
+      
       {/* MODAL PARA ESPECIFICACIONES */}
       {isSpecsModalOpen && (
         <SpecManagerModal 
@@ -561,10 +601,11 @@ export default function AdminDashboard() {
           onClose={() => setIsSpecsModalOpen(false)} 
           onSave={() => {
             setIsSpecsModalOpen(false);
-            fetchProducts(); // Esto recarga la tabla para ver los cambios reflejados
+            fetchProducts(); 
           }}
         />
       )}
+      
       {/* MODAL PARA GESTIÓN DE DESTACADOS */}
       {isFeaturedModalOpen && (
         <ProductFeaturedModal 
@@ -584,7 +625,6 @@ export default function AdminDashboard() {
           />
           
           <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-zinc-100 flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
-            
             <div className="flex justify-between items-center px-6 py-5 border-b border-zinc-100">
               <h2 className="text-sm font-black text-zinc-950 uppercase tracking-widest">
                 {activeModal === 'chats' ? 'Historial de Interacciones' : 'Comentarios de Productos'}
@@ -607,6 +647,16 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* AJUSTE 2: TU MODAL MASIVO NUEVO (Inyectado al puro final)                 */}
+      {/* ========================================================================= */}
+      <BulkPromoModal 
+        isOpen={isBulkPromoOpen}
+        onClose={() => setIsBulkPromoOpen(false)}
+        selectedProducts={products.filter(p => selectedProducts.includes(p.id))}
+        onApply={handleApplyBulkPromos}
+      />
 
     </div>
   );

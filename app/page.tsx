@@ -105,13 +105,13 @@ export default function Home() {
             key={videoSources[currentIndex]}
             autoPlay muted playsInline
             onEnded={handleVideoEnd}
-            className={`w-full h-full object-cover transition-all duration-[1500ms] ease-in-out ${
+            className={`w-full h-full object-cover transition-all duration-500 ease-in-out ${
               isTransitioning ? 'opacity-0 scale-105' : 'opacity-50 scale-100'
             }`}
           >
             <source src={videoSources[currentIndex]} type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-zinc-100 pointer-events-none"></div>
+          <div className="absolute inset-0 bg-linear-to-b from-transparent via-white/10 to-zinc-100 pointer-events-none"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.6)_0%,transparent_60%)] pointer-events-none"></div>
         </div>
 
@@ -120,7 +120,7 @@ export default function Home() {
             Colección Exclusiva 2026
           </h2>
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-zinc-950 mb-6 leading-[1.1]">
-            Hogares que <br /> cuentan <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 to-indigo-600">historias.</span>
+            Hogares que <br /> cuentan <span className="text-transparent bg-clip-text bg-linear-to-r from-sky-600 to-indigo-600">historias.</span>
           </h1>
           <p className="text-zinc-700 text-base md:text-lg max-w-2xl mx-auto mb-10 font-medium">
             Descubre piezas de diseño únicas que transforman tu espacio en un refugio de elegancia y confort. Calidad premium para quienes exigen lo mejor.
@@ -208,7 +208,7 @@ export default function Home() {
 
               {/* FILA 4: ARTÍCULOS SELECCIONADOS (Featured) */}
               {featuredProducts.length > 0 && (
-                <div className="bg-gradient-to-br from-sky-500/5 to-indigo-500/5 rounded-[2.5rem] p-8 md:p-10 border border-sky-500/10 shadow-sm">
+                <div className="bg-linear-to-br from-sky-500/5 to-indigo-500/5 rounded-[2.5rem] p-8 md:p-10 border border-sky-500/10 shadow-sm">
                   <FeaturedMiniShop featuredProducts={featuredProducts} />
                 </div>
               )}

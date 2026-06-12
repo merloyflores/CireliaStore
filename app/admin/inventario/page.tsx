@@ -248,16 +248,16 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-6 sm:p-10 text-zinc-950">
+    <div className="min-h-screen bg-zinc-50 p-6 sm:p-10 text-zinc-950 w-full overflow-x-hidden">
       
       {/* HEADER DEL DASHBOARD */}
-      <div className="flex flex-row max-[1024px]:flex-col justify-between items-center max-[1024px]:items-start gap-4 mb-10 pb-6 border-b border-b-zinc-200">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-10 pb-6 border-b border-b-zinc-200">
         <div>
           <h1 className="text-3xl font-black tracking-tight">Panel de Control</h1>
           <p className="text-zinc-500 text-sm font-medium">Gestiona el inventario oficial de Cirelia Store</p>
         </div>
         
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2">
           <button 
             onClick={() => setActiveModal('chats')}
             className="flex-1 sm:flex-none px-4 h-12 rounded-xl font-bold flex items-center justify-center gap-2 border bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 transition-all text-sm shadow-sm"
@@ -348,7 +348,8 @@ export default function AdminDashboard() {
         <>
           <div className="bg-white border border-zinc-100 rounded-3xl shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              {/* AJUSTE 1: max-[927px]:table-fixed obliga a la tabla a respetar el límite de la pantalla. Quitamos el min-w-200. */}
+              <table className="w-full text-left border-collapse max-[927px]:table-fixed">
                 <thead>
                   <tr className="bg-zinc-50 border-b border-zinc-100 text-zinc-400 text-[11px] font-black uppercase tracking-widest">
                     <th className="py-4 pl-6 pr-2 w-12 text-center">
@@ -363,9 +364,9 @@ export default function AdminDashboard() {
                     <th className="py-4 px-6">Producto</th>
                     <th className="py-4 px-6 max-[1175px]:hidden">Categoría</th>
                     <th className="py-4 px-6 max-[1055px]:hidden">Variantes</th>
-                    <th className="py-4 px-6 max-[877px]:hidden">Precio</th>
-                    <th className="py-4 px-6 max-[590px]:hidden">Stock</th>
-                    <th className="py-4 px-6 text-right hidden md:table-cell">Acciones</th>
+                    <th className="py-4 px-6 max-[935px]:hidden">Precio</th>
+                    <th className="py-4 px-6 max-[927px]:hidden">Stock</th>
+                    <th className="py-4 px-6 text-right hidden min-[928px]:table-cell whitespace-nowrap">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 text-sm font-medium">
@@ -381,32 +382,35 @@ export default function AdminDashboard() {
                         />
                       </td>
 
-                      {/* CELDA PRODUCTO: Incluye los botones duplicados para móvil */}
-                      <td className="py-4 px-6 flex flex-col md:flex-row items-start md:items-center gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="relative w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center text-zinc-400">
-                            {product.image_url ? <img src={product.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={18} />}
+                      {/* AJUSTE 2: padding adaptativo y flex contenido con w-full y min-w-0 */}
+                      <td className="py-4 px-6 max-[927px]:px-4">
+                        <div className="flex flex-col min-[928px]:flex-row items-start min-[928px]:items-center gap-4 w-full min-w-0">
+                          <div className="flex items-center gap-4 w-full min-w-0">
+                            <div className="relative w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center text-zinc-400">
+                              {product.image_url ? <img src={product.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={18} />}
+                              
+                              {product.is_express && (
+                                <div className="absolute top-1 right-1 bg-amber-400 text-white p-0.5 rounded-full border border-white shadow-sm">
+                                  <Zap size={10} fill="currentColor" strokeWidth={3} />
+                                </div>
+                              )}
+                            </div>
                             
-                            {product.is_express && (
-                              <div className="absolute top-1 right-1 bg-amber-400 text-white p-0.5 rounded-full border border-white shadow-sm">
-                                <Zap size={10} fill="currentColor" strokeWidth={3} />
-                              </div>
-                            )}
+                            {/* AJUSTE 3: min-w-0 aquí evita que los títulos o textos largos inflen la tabla */}
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-zinc-950 truncate">{product.name}</p>
+                              <div 
+                                className="text-xs text-zinc-400 line-clamp-1 max-w-xs prose prose-sm **:inline **:m-0"
+                                dangerouslySetInnerHTML={{ __html: product.description }} 
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-bold text-zinc-950">{product.name}</p>
-                            <div 
-                              className="text-xs text-zinc-400 line-clamp-1 max-w-xs prose prose-sm **:inline **:m-0"
-                              dangerouslySetInnerHTML={{ __html: product.description }} 
-                            />
+                          
+                          <div className="flex min-[928px]:hidden gap-2 w-full mt-2">
+                            <button onClick={() => { setProductToEditSpecs(product); setIsSpecsModalOpen(true); }} className="p-2 text-zinc-600 bg-zinc-100 rounded-lg flex-1 flex justify-center"><Settings2 size={16} /></button>
+                            <button onClick={() => openModal(product)} className="p-2 text-zinc-600 bg-zinc-100 rounded-lg flex-1 flex justify-center"><Edit3 size={16} /></button>
+                            <button onClick={() => handleDelete(product)} className="p-2 text-red-500 bg-red-50 rounded-lg flex-1 flex justify-center"><Trash2 size={16} /></button>
                           </div>
-                        </div>
-                        
-                        {/* BOTONES MÓVIL (Solo aparecen aquí cuando la pantalla es pequeña) */}
-                        <div className="flex md:hidden gap-1 w-full mt-2">
-                          <button onClick={() => { setProductToEditSpecs(product); setIsSpecsModalOpen(true); }} className="p-2 text-zinc-600 bg-zinc-100 rounded-lg flex-1 flex justify-center"><Settings2 size={16} /></button>
-                          <button onClick={() => openModal(product)} className="p-2 text-zinc-600 bg-zinc-100 rounded-lg flex-1 flex justify-center"><Edit3 size={16} /></button>
-                          <button onClick={() => handleDelete(product)} className="p-2 text-red-500 bg-red-50 rounded-lg flex-1 flex justify-center"><Trash2 size={16} /></button>
                         </div>
                       </td>
                       
@@ -433,7 +437,7 @@ export default function AdminDashboard() {
                         </div>
                       </td>
 
-                      <td className="py-4 px-6 max-[877px]:hidden">
+                      <td className="py-4 px-6 max-[935px]:hidden">
                         {product.is_promo ? (
                           <div className="flex flex-col">
                             <span className="text-zinc-400 line-through font-normal text-xs">₡{product.price?.toLocaleString()}</span>
@@ -444,18 +448,17 @@ export default function AdminDashboard() {
                         )}
                       </td>
                       
-                      <td className="py-4 px-6 max-[590px]:hidden">
+                      <td className="py-4 px-6 max-[927px]:hidden">
                         <span className={`px-2.5 py-1 rounded-md text-xs font-black ${product.stock > 5 ? 'bg-zinc-100 text-zinc-700' : 'bg-red-50 text-red-600'}`}>
                           {product.stock} unids
                         </span>
                       </td>
                       
-                      {/* CELDA ACCIONES: Oculta en móvil (md:hidden) para no duplicar */}
-                      <td className="py-4 px-6 text-right hidden md:table-cell">
-                        <div className="flex justify-end gap-1.5">
-                          <button onClick={() => { setProductToEditSpecs(product); setIsSpecsModalOpen(true); }} className="p-2 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-all" title="Editar especificaciones"><Settings2 size={16} /></button>
-                          <button onClick={() => openModal(product)} className="p-2 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition-all"><Edit3 size={16} /></button>
-                          <button onClick={() => handleDelete(product)} className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={16} /></button>
+                      <td className="py-4 pr-6 pl-2 text-right hidden min-[928px]:table-cell whitespace-nowrap w-[1%]">
+                        <div className="flex justify-end gap-1 shrink-0">
+                          <button onClick={() => { setProductToEditSpecs(product); setIsSpecsModalOpen(true); }} className="p-1.5 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-all" title="Editar especificaciones"><Settings2 size={15} /></button>
+                          <button onClick={() => openModal(product)} className="p-1.5 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition-all"><Edit3 size={15} /></button>
+                          <button onClick={() => handleDelete(product)} className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={15} /></button>
                         </div>
                       </td>
                     </tr>

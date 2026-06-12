@@ -138,6 +138,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
   const [currentImageUrl, setCurrentImageUrl] = useState('');
   const [colors, setColors] = useState<string[]>([]);
   const [colorInput, setColorInput] = useState('');
+  const [isExpress, setIsExpress] = useState(productToEdit?.is_express || false);
 
   
 
@@ -157,6 +158,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
   // Estados para Promociones
   const [isPromoActive, setIsPromoActive] = useState(false);
   const [promoPrice, setPromoPrice] = useState('');
+
 
   // Estados para Tallas / Medidas Inteligentes
   const [sizes, setSizes] = useState<string[]>([]);
@@ -194,6 +196,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
           setSizes(productToEdit.sizes || []);
           setIsPromoActive(!!productToEdit.is_promo);
           setPromoPrice(productToEdit.promo_price?.toString() || '');
+          setIsExpress(productToEdit.is_express || false);
 
           if (productToEdit.colors) {
             if (Array.isArray(productToEdit.colors)) {
@@ -220,7 +223,8 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
           setColors([]);
           setSizes([]);           // Reset
           setIsPromoActive(false); // Reset
-          setPromoPrice('');       // Reset
+          setPromoPrice('');
+          setIsExpress(false);       // Reset
         }
         setImageFile(null);
         setColorInput('');
@@ -286,8 +290,8 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
         category_id: categoryId || null, 
         image_url: finalImageUrl,
         colors: colors,
-        // --- AGREGA ESTO ---
         sizes: sizes,
+        is_express: isExpress,
         is_promo: isPromoActive,
         promo_price: isPromoActive && promoPrice ? parseFloat(promoPrice) : null
       };
@@ -698,10 +702,10 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
 
             {/* COLUMNA 2: Estética y Multimedia */}
             <div className="space-y-5">
+              {/* Sección Variantes de Color */}
               <div>
                 <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-1.5">Variantes de Color</label>
                 <div className="p-4 bg-zinc-50/50 border border-zinc-200 rounded-2xl space-y-3">
-                  
                   {/* Selector / Input manual */}
                   <div className="flex gap-2">
                     <div className="relative flex-1">
@@ -731,12 +735,11 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                     </button>
                   </div>
 
-                  {/* Sugerencias rápidas estéticas */}
+                  {/* Sugerencias rápidas */}
                   <div className="space-y-1.5">
                     <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider block">
                       Paleta Base Disponible:
                     </span>
-                    
                     <div className="max-h-27.5 overflow-y-auto pr-1 flex flex-wrap gap-1.5 items-start scrollbar-thin scrollbar-thumb-zinc-200 scrollbar-track-transparent">
                       {(() => {
                         const vistasUnicas: string[] = [];
@@ -751,7 +754,6 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
 
                         return coloresFiltrados.map((colorKey) => {
                           const hexColor = COLOR_MAP[colorKey];
-                          
                           return (
                             <button
                               key={colorKey}
@@ -771,7 +773,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                     </div>
                   </div>
 
-                  {/* Contenedor de Chips Seleccionados */}
+                  {/* Chips Seleccionados */}
                   {colors.length > 0 ? (
                     <div className="flex flex-wrap gap-1.5 pt-2 border-t border-zinc-200/60">
                       {colors.map((color, index) => {
@@ -803,6 +805,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                 </div>
               </div>
 
+              {/* Sección Fotografía */}
               <div className="space-y-4">
                 <div>
                   <label className="block text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">
@@ -824,7 +827,8 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                       <input 
                         type="file" 
                         id="product-image-upload"
-                        title="Seleccionar imagen principal del producto"
+                        title="Subir imagen principal del producto"
+                        placeholder="Seleccionar archivo"
                         accept="image/*" 
                         onChange={(e) => {
                           if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
@@ -851,11 +855,23 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                       <ImageIcon size={16} />
                       Gestionar galería de fotos
                     </button>
-                    <p className="text-[10px] text-zinc-400 text-center mt-2">
-                      Añade más fotos para mostrar diferentes ángulos del producto.
-                    </p>
                   </div>
                 )}
+              </div>
+
+              {/* NUEVO: Toggle Express al final */}
+              <div className="flex items-center justify-between p-4 bg-white border border-zinc-200 rounded-2xl shadow-sm">
+                <div>
+                  <label className="text-xs font-bold text-zinc-900 block">Envío Express</label>
+                  <p className="text-[10px] text-zinc-400">Activar para entrega prioritaria</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsExpress(!isExpress)}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${isExpress ? 'bg-emerald-600' : 'bg-zinc-200'}`}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isExpress ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
               </div>
             </div>
 

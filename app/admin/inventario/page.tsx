@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../../lib/supabase';
 // Importamos ChevronLeft y ChevronRight para los botones de paginación
-import { Settings2, Plus, Trash2, Edit3, Image as ImageIcon, Loader2, LogOut, MessageSquare, Star, X, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Zap, Settings2, Plus, Trash2, Edit3, Image as ImageIcon, Loader2, LogOut, MessageSquare, Star, X, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ProductModal from '../../../components/ProductModal'; 
 import ChatHistoryView from '@/components/ChatHistoryView'; 
 import ProductFeedbackView from '@/components/ProductFeedbackView';
 import SpecManagerModal from '@/components/SpecManagerModal';
+import ProductFeaturedModal from '@/components/ProductFeaturedModal';
 
 const COLOR_MAP: Record<string, string> = {
   // --- TUS METÁLICOS Y VALIOSOS ---
@@ -87,6 +88,7 @@ export default function AdminDashboard() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isSpecsModalOpen, setIsSpecsModalOpen] = useState(false);
   const [productToEditSpecs, setProductToEditSpecs] = useState<any>(null);
+  const [isFeaturedModalOpen, setIsFeaturedModalOpen] = useState(false);
 
   // ESTADOS PARA FILTROS Y BORRADO MASIVO
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -273,6 +275,12 @@ export default function AdminDashboard() {
           <div className="h-10 w-px bg-zinc-200 mx-1 hidden sm:block"></div>
 
           <button 
+            onClick={() => setIsFeaturedModalOpen(true)}
+            className="flex-1 sm:flex-none bg-amber-500 text-white px-5 h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-amber-600 transition-all active:scale-95 text-sm shadow-md"
+          >
+            <Star size={18} /> Destacados
+          </button>
+          <button 
             onClick={() => openModal()}
             className="flex-1 sm:flex-none bg-zinc-950 text-white px-5 h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-sky-600 transition-all active:scale-95 text-sm shadow-md"
           >
@@ -376,8 +384,14 @@ export default function AdminDashboard() {
                       {/* CELDA PRODUCTO: Incluye los botones duplicados para móvil */}
                       <td className="py-4 px-6 flex flex-col md:flex-row items-start md:items-center gap-4">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center text-zinc-400">
+                          <div className="relative w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center text-zinc-400">
                             {product.image_url ? <img src={product.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={18} />}
+                            
+                            {product.is_express && (
+                              <div className="absolute top-1 right-1 bg-amber-400 text-white p-0.5 rounded-full border border-white shadow-sm">
+                                <Zap size={10} fill="currentColor" strokeWidth={3} />
+                              </div>
+                            )}
                           </div>
                           <div>
                             <p className="font-bold text-zinc-950">{product.name}</p>
@@ -546,6 +560,15 @@ export default function AdminDashboard() {
             setIsSpecsModalOpen(false);
             fetchProducts(); // Esto recarga la tabla para ver los cambios reflejados
           }}
+        />
+      )}
+      {/* MODAL PARA GESTIÓN DE DESTACADOS */}
+      {isFeaturedModalOpen && (
+        <ProductFeaturedModal 
+          isOpen={isFeaturedModalOpen} 
+          onClose={() => setIsFeaturedModalOpen(false)} 
+          products={products} 
+          onUpdate={fetchProducts}
         />
       )}
 

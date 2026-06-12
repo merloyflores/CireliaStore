@@ -267,11 +267,11 @@ export default function AdminDashboard() {
     }
   };
 
-return (
-    <div className="min-h-screen bg-zinc-50 p-6 sm:p-10 text-zinc-950 w-full overflow-x-hidden">
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500 w-full">
       
       {/* HEADER DEL DASHBOARD */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-10 pb-6 border-b border-b-zinc-200">
+      <div className="flex flex-wrap items-center justify-between gap-4 md:gap-8 mb-10 pb-6 border-b border-b-zinc-200">
         <div>
           <h1 className="text-3xl font-black tracking-tight">Panel de Control</h1>
           <p className="text-zinc-500 text-sm font-medium">Gestiona el inventario oficial de Cirelia Store</p>

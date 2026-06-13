@@ -611,7 +611,11 @@ export default function AdminDashboard() {
         <ProductFeaturedModal 
           isOpen={isFeaturedModalOpen} 
           onClose={() => setIsFeaturedModalOpen(false)} 
-          products={products} 
+          // Mapeamos los productos para "aplanar" el nombre de la categoría y que el modal la entienda
+          products={products.map(p => ({
+            ...p,
+            category: p.categories?.name || 'Sin Categoría'
+          }))} 
           onUpdate={fetchProducts}
         />
       )}

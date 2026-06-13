@@ -1,13 +1,13 @@
 import { supabase } from '@/lib/supabase';
 import SectionContainer from "@/components/SectionContainer";
-import ProductCard from "@/components/ProductCard";
+import CategoryRow from "@/components/CategoryRow"; // Carrusel Premium
 import Link from 'next/link';
-import { ChevronLeft, Star, ShieldCheck, Truck, Sparkles } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, Truck, Tag } from 'lucide-react';
 import ProductActions from "@/components/ProductActions"; 
 import ProductGallery from "@/components/ProductGallery"; 
 import ProductSelectors from "@/components/ProductSelectors"; 
-import ProductSpecs from "@/components/ProductSpecs"; 
-import ProductReviews from "@/components/ProductReviews"; // <-- 1. Importación del nuevo componente
+import ProductSpecs from "@/components/ProductSpecs";
+import ProductReviews from "@/components/ProductReviews";
 
 export const dynamic = 'force-dynamic';
 
@@ -16,139 +16,71 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   const { data: product } = await supabase
     .from('products')
-    .select('*, product_media(url)')
+    .select('*, product_media(url), categories(name)')
     .eq('id', id)
     .single();
 
-  if (!product) {
-    return (
-      <div className="py-40 text-center bg-zinc-50">
-        <h1 className="text-2xl font-black text-zinc-950">Producto no encontrado</h1>
-        <Link href="/shop" className="text-sky-600 font-bold hover:underline mt-4 inline-block">Volver a la tienda</Link>
-      </div>
-    );
-  }
+  if (!product) return <div className="py-40 text-center text-zinc-500">Producto no encontrado</div>;
 
-  // Buscamos productos para el bloque "Otros también compraron"
-  const { data: recommendations } = await supabase
+  // Productos relacionados por categoría (UUID)
+  const { data: crossSellingProducts } = await supabase
     .from('products')
     .select('*')
-    .not('id', 'eq', id)
-    .limit(4);
+    .neq('id', id)
+    .eq('category_id', product.category_id)
+    .limit(8);
 
-  const galleryMedia = product.product_media || [];
+  const hasDiscount = product.is_promo && product.promo_price < product.price;
 
   return (
-    <div className="bg-white min-h-screen pb-20">
+    // FORZAMOS EL FONDO AQUÍ PARA QUE NO CAMBIE A NEGRO EN MÓVILES
+    <div className="bg-[#F3F3F4] min-h-screen pb-24 text-zinc-900">
       <SectionContainer>
-        <Link href="/shop" className="flex items-center gap-2 text-zinc-400 hover:text-sky-600 transition py-8 text-xs font-bold uppercase tracking-widest">
-          <ChevronLeft size={14} /> Volver al catálogo
-        </Link>
+        <div className="py-8">
+          <Link href="/shop" className="flex items-center gap-2 text-zinc-500 hover:text-zinc-950 transition text-[11px] font-bold uppercase tracking-widest">
+            <ChevronLeft size={14} /> Volver al catálogo
+          </Link>
+        </div>
 
-        {/* CONTENEDOR PRINCIPAL */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 mb-16">
-          <div className="w-full">
-            <ProductGallery 
-              mainImage={product.image_url} 
-              productName={product.name} 
-              media={galleryMedia} 
-            />
+        {/* HERO SECTION */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+          <div className="bg-white rounded-3xl p-4 border border-zinc-200 shadow-sm">
+            <ProductGallery mainImage={product.image_url} productName={product.name} media={product.product_media || []} />
           </div>
 
-          <div className="flex flex-col justify-center">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="bg-sky-50 text-sky-600 px-4 py-1 rounded-full font-bold uppercase tracking-tighter text-[10px]">
-                {product.category}
-              </span>
-              <span className="flex items-center gap-1 text-amber-500 text-[10px] font-bold">
-                <Sparkles size={12} fill="currentColor" /> NUEVA COLECCIÓN
-              </span>
-            </div>
-
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-zinc-950 mb-6 tracking-tighter leading-[0.95]">
-              {product.name}
-            </h1>
-            
-            <div className="flex items-center gap-6 mb-6">
-              <span className="text-3xl font-black text-zinc-950 tracking-tight">
-                ${product.price?.toLocaleString()}
-              </span>
-              <div className="h-8 w-px bg-zinc-200"></div>
-              <div className="flex items-center gap-1 text-amber-400">
-                <Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" />
-                <span className="text-zinc-400 text-[10px] font-bold ml-2 uppercase tracking-widest">Excelencia Cirelia</span>
+          <div className="flex flex-col gap-6">
+            <div className="bg-white p-8 rounded-3xl border border-zinc-200 shadow-sm">
+              <span className="bg-zinc-100 text-zinc-600 px-3 py-1 rounded-md text-[10px] font-bold uppercase">{product.categories?.name || 'General'}</span>
+              <h1 className="text-4xl lg:text-5xl font-black tracking-tighter mt-4 mb-6">{product.name}</h1>
+              
+              <div className="text-4xl font-black mb-8">
+                ₡{hasDiscount ? product.promo_price?.toLocaleString() : product.price?.toLocaleString()}
               </div>
-            </div>
 
-            <p className="text-zinc-500 leading-relaxed text-base font-medium">
-              {product.description || "Inspirado en la comodidad moderna, este diseño exclusivo combina materiales nobles con una estética minimalista."}
-            </p>
-
-            <ProductSelectors 
-              colors={product.colors} 
-              isExpressDelivery={product.is_express} 
-            />
-
-            <ProductActions product={product} />
-
-            <div className="grid grid-cols-2 gap-6 pt-8 mt-4 border-t border-zinc-100">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center shadow-sm">
-                  <Truck size={22} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Logística</p>
-                  <p className="text-xs font-bold text-zinc-900">Envío Cirelia Priority</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-zinc-950 text-white rounded-2xl flex items-center justify-center shadow-sm">
-                  <ShieldCheck size={22} />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Protección</p>
-                  <p className="text-xs font-bold text-zinc-900">Garantía Cirelia 2026</p>
-                </div>
-              </div>
+              <ProductSelectors 
+                colors={product.colors} 
+                sizes={product.sizes}
+                isExpressDelivery={product.is_express}
+                stock={product.stock}
+              />
+              <ProductActions product={product} />
             </div>
           </div>
         </div>
 
-        {/* COMPONENTE DE FICHA TÉCNICA Y ESPECIFICACIONES */}
-        <ProductSpecs 
-          description={product.description}
-          brand="Miomu"
-          material={product.material}
-          dimensions={product.dimensions}
-          inTheBox={product.in_the_box}
-          sku={product.sku}
-          weight={product.weight}
-          warrantyDays={product.warranty_days}
-        />
+        {/* DETALLES */}
+        <div className="mt-12 space-y-6">
+          <ProductSpecs {...product} brand={product.brand} />
+          <ProductReviews productId={product.id} />
+        </div>
 
-        {/* 2. COMPONENTE DE RESEÑAS Y COMENTARIOS DE LA COMUNIDAD */}
-        <ProductReviews productId={product.id} />
-
-        {/* SECCIÓN: OTROS TAMBIÉN COMPRARON */}
-        {recommendations && recommendations.length > 0 && (
-          <div className="pt-24 mt-24 border-t border-zinc-100">
-            <div className="flex flex-col md:flex-row justify-between items-center md:items-end mb-12 gap-4">
-              <div className="text-center md:text-left">
-                <h2 className="text-4xl font-black text-black tracking-tighter">Otros también compraron</h2>
-                <p className="text-zinc-500 font-medium">Los usuarios que vieron este artículo también añadieron estas piezas a su carrito</p>
-              </div>
-              <Link href="/shop" className="bg-zinc-100 text-zinc-900 px-6 py-3 rounded-full font-bold text-sm hover:bg-sky-600 hover:text-white transition-all">
-                Ver toda la tienda
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-              {recommendations.map((item) => (
-                <ProductCard key={item.id} product={item} />
-              ))}
-            </div>
-          </div>
-        )}
+        {/* CARRUSEL RECOMENDADO */}
+        <div className="mt-20">
+          <CategoryRow 
+            category={`Más de ${product.categories?.name || 'Colección'}`}
+            products={crossSellingProducts || []} 
+          />
+        </div>
       </SectionContainer>
     </div>
   );

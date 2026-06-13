@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import SectionContainer from "@/components/SectionContainer";
-import ProductCard from "@/components/ProductCard";
+import CategoryRow from "@/components/CategoryRow"; 
 import Link from 'next/link';
-import { ChevronLeft, Star, ShieldCheck, Truck, Sparkles, Tag } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, Truck, Tag } from 'lucide-react';
 import ProductActions from "@/components/ProductActions"; 
 import ProductGallery from "@/components/ProductGallery"; 
 import ProductSelectors from "@/components/ProductSelectors"; 
@@ -14,9 +14,11 @@ export const dynamic = 'force-dynamic';
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
+  // 1. Obtener producto actual + JOIN con la tabla categories para sacar el nombre real
   const { data: product } = await supabase
     .from('products')
-    .select('*, product_media(url)')
+    // Agregamos categories(name) para traer el texto de la categoría relacional
+    .select('*, product_media(url), categories(name)') 
     .eq('id', id)
     .single();
 
@@ -28,15 +30,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
     );
   }
 
-  // Lógica de productos relacionados
+  // Extraemos el nombre de la categoría de forma segura
+  const categoryName = product.categories?.name || "esta categoría";
+
+  // 2. Lógica de productos relacionados usando el category_id (UUID) correcto
   let { data: crossSellingProducts } = await supabase
     .from('products')
-    .select('*')
-    .neq('id', id)
-    .eq('category', product.category)
-    .limit(4);
+    .select('*, categories(name)') // Traemos también sus nombres de categoría si los ocupás luego
+    .neq('id', id) 
+    .eq('category_id', product.category_id); // <-- ¡Aquí estaba el error! Ahora usamos category_id
 
-  // Lógica de precios
+  // Lógica de precios y promociones
   const hasDiscount = product.is_promo === true && product.promo_price && product.promo_price < product.price;
   const discountPercentage = hasDiscount 
     ? Math.round(((product.price - product.promo_price) / product.price) * 100) 
@@ -45,16 +49,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="bg-zinc-50 min-h-screen pb-24">
       <SectionContainer>
-        {/* Breadcrumb minimalista */}
+        {/* Breadcrumb */}
         <div className="py-8">
           <Link href="/shop" className="group flex items-center gap-2 text-zinc-400 hover:text-zinc-950 transition text-[11px] font-bold uppercase tracking-widest">
             <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> Volver a la tienda
           </Link>
         </div>
 
-        {/* HERO SECTION - Consistente */}
+        {/* HERO SECTION */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
-          {/* Gallery */}
           <div className="w-full">
             <div className="sticky top-24 bg-white rounded-3xl p-4 border border-zinc-100 shadow-sm">
               <ProductGallery 
@@ -65,12 +68,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </div>
           </div>
 
-          {/* Info Column */}
           <div className="flex flex-col gap-8">
             <div className="bg-white p-8 rounded-3xl border border-zinc-100 shadow-sm">
                <div className="flex items-center gap-3 mb-6">
                 <span className="bg-zinc-100 text-zinc-600 px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">
-                  {product.category}
+                  {/* Mostramos el nombre relacional */}
+                  {categoryName}
                 </span>
                 {hasDiscount && (
                   <span className="flex items-center gap-1.5 bg-emerald-500 text-white px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm">
@@ -83,7 +86,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 {product.name}
               </h1>
 
-              {/* Bloque de Precio */}
               <div className="flex items-end gap-4 pb-8 border-b border-zinc-100">
                 <div className="flex flex-col">
                   {hasDiscount && (
@@ -97,9 +99,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               
               <div className="mt-8">
                 <ProductSelectors 
-                  colors={product.colors} 
-                  sizes={product.sizes}
-                  isExpressDelivery={product.is_express} 
+                  colors={product.colors as any} 
+                  sizes={product.sizes as any}
+                  isExpressDelivery={!!product.is_express}
+                  stock={product.stock ? Number(product.stock) : 0}
                 />
                 <div className="mt-6">
                   <ProductActions product={product} />
@@ -107,21 +110,25 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
             </div>
 
-            {/* Info rápida */}
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center gap-3 bg-white border border-zinc-100 p-5 rounded-2xl shadow-sm">
                 <div className="text-zinc-400"><Truck size={20} /></div>
-                <div><p className="text-[10px] font-bold text-zinc-400 uppercase">Logística</p><p className="text-xs font-bold text-zinc-950">Envío Priority</p></div>
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase">Logística</p>
+                  <p className="text-xs font-bold text-zinc-950">Envío Priority</p>
+                </div>
               </div>
               <div className="flex items-center gap-3 bg-white border border-zinc-100 p-5 rounded-2xl shadow-sm">
                 <div className="text-zinc-400"><ShieldCheck size={20} /></div>
-                <div><p className="text-[10px] font-bold text-zinc-400 uppercase">Protección</p><p className="text-xs font-bold text-zinc-950">Garantía 2026</p></div>
+                <div>
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase">Protección</p>
+                  <p className="text-xs font-bold text-zinc-950">Garantía 2026</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* CONTENIDO INFERIOR - Ancho unificado */}
         <div className="mt-20 space-y-16">
           <div className="bg-white p-8 lg:p-16 rounded-3xl border border-zinc-100 shadow-sm">
              <ProductSpecs 
@@ -145,17 +152,15 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        {/* RECOMENDACIONES */}
-        {crossSellingProducts && crossSellingProducts.length > 0 && (
-          <div className="mt-24 pt-24 border-t border-zinc-200">
-             <h2 className="text-3xl font-black text-zinc-950 tracking-tighter mb-12">Productos que te podrían interesar</h2>
-             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                {crossSellingProducts.map((item) => (
-                  <ProductCard key={item.id} product={item} />
-                ))}
-             </div>
-          </div>
-        )}
+        {/* --- EL CARRUSEL MAGICO --- */}
+        <div className="mt-24 pt-12 border-t border-zinc-200">
+          <CategoryRow 
+            category={`Más de ${categoryName}`}
+            subtitle="Productos seleccionados de la misma colección que te podrían interesar."
+            products={crossSellingProducts || []} 
+          />
+        </div>
+
       </SectionContainer>
     </div>
   );

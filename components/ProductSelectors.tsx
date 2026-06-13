@@ -8,7 +8,8 @@ import {
   Smartphone, 
   Wallet, 
   Banknote, 
-  Building2 
+  Building2,
+  AlertTriangle 
 } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE MÉTODOS DE PAGO ---
@@ -87,24 +88,26 @@ interface ProductSelectorsProps {
   colors?: string[] | string | null;
   sizes?: string[] | string | null;
   isExpressDelivery?: boolean;
+  stock?: number | null; // <-- PROPIEDAD AÑADIDA PARA CONTROLAR EL FILTRO DE SUPABASE
 }
 
 export default function ProductSelectors({ 
   colors, 
   sizes, 
-  isExpressDelivery = true 
+  isExpressDelivery = true,
+  stock = 10 // Fallback seguro en caso de que falle la lectura inicial
 }: ProductSelectorsProps) {
   
+  // Evaluamos si el stock de Supabase está totalmente en cero
+  const isOutOfStock = stock !== null && stock <= 0;
+
   // --- PROCESAMIENTO SIMPLE DE TEXTO (SEPARADO POR COMAS) ---
-  
-  // Procesamos colores: si es array se queda igual, si es string TEXT se separa por comas
   const safeColors = Array.isArray(colors) 
     ? colors 
     : (typeof colors === 'string' && colors.trim() !== '')
       ? colors.split(',').map(c => c.trim())
       : [];
 
-  // Procesamos tallas: exactamento la misma lógica simple de TEXT separada por comas
   const safeSizes = Array.isArray(sizes)
     ? sizes
     : (typeof sizes === 'string' && sizes.trim() !== '')
@@ -152,11 +155,14 @@ export default function ProductSelectors({
                 <button
                   key={color}
                   type="button"
+                  disabled={isOutOfStock}
                   onClick={() => setSelectedColor(color)}
-                  className={`h-10 px-3 rounded-lg text-xs font-bold transition-all border-2 flex items-center gap-2 cursor-pointer active:scale-95 ${
-                    isSelected
-                      ? 'border-zinc-950 text-zinc-950'
-                      : 'border-zinc-200 text-zinc-400 hover:border-zinc-400'
+                  className={`h-10 px-3 rounded-lg text-xs font-bold transition-all border-2 flex items-center gap-2 active:scale-95 ${
+                    isOutOfStock 
+                      ? 'opacity-40 cursor-not-allowed border-zinc-200 text-zinc-300' 
+                      : isSelected
+                        ? 'border-zinc-950 text-zinc-950 cursor-pointer'
+                        : 'border-zinc-200 text-zinc-400 hover:border-zinc-400 cursor-pointer'
                   }`}
                 >
                   <span 
@@ -191,11 +197,14 @@ export default function ProductSelectors({
                 <button
                   key={size}
                   type="button"
+                  disabled={isOutOfStock}
                   onClick={() => setSelectedSize(size)}
-                  className={`h-10 min-w-[2.5rem] px-3 rounded-lg text-xs font-black transition-all border-2 flex items-center justify-center cursor-pointer active:scale-95 ${
-                    isSelected
-                      ? 'border-zinc-950 text-zinc-950'
-                      : 'border-zinc-200 text-zinc-400 hover:border-zinc-400'
+                  className={`h-10 min-w-[2.5rem] px-3 rounded-lg text-xs font-black transition-all border-2 flex items-center justify-center active:scale-95 ${
+                    isOutOfStock
+                      ? 'opacity-40 cursor-not-allowed border-zinc-200 text-zinc-300'
+                      : isSelected
+                        ? 'border-zinc-950 text-zinc-950 cursor-pointer'
+                        : 'border-zinc-200 text-zinc-400 hover:border-zinc-400 cursor-pointer'
                   }`}
                 >
                   {size}
@@ -222,11 +231,13 @@ export default function ProductSelectors({
       {/* COMPONENTE LOGÍSTICA (Borde puro, sin fondo) */}
       <div className="rounded-xl p-4 border-2 border-zinc-100 space-y-3">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 text-emerald-600">
-            <CheckCircle2 size={16} />
+          <div className={`mt-0.5 ${isOutOfStock ? 'text-zinc-400' : 'text-emerald-600'}`}>
+            {isOutOfStock ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
           </div>
           <div className="text-xs font-medium text-zinc-600">
-            {isExpressDelivery ? (
+            {isOutOfStock ? (
+              <p className="text-zinc-400">Temporalmente sin inventario para entrega inmediata.</p>
+            ) : isExpressDelivery ? (
               <p>Entrega <span className="text-zinc-950 font-black uppercase tracking-tight">Mañana mismo</span> disponible.</p>
             ) : (
               <p>Entrega estándar: 2 a 4 días hábiles.</p>
@@ -243,7 +254,7 @@ export default function ProductSelectors({
             {PAYMENT_METHODS.map((method) => (
               <div 
                 key={method.id} 
-                className="flex items-center gap-2 border border-zinc-100 rounded-lg py-1.5 px-3 hover:border-zinc-200 transition-colors bg-white/50"
+                className="flex items-center gap-2 border border-zinc-100 rounded-lg py-1.5 px-3 bg-white/50"
               >
                 <method.icon size={13} className="text-zinc-400" />
                 <span className="text-[10px] font-bold text-zinc-600 whitespace-nowrap">

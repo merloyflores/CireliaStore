@@ -26,23 +26,50 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Estilo para navegadores basados en Webkit (Chrome, Edge, Safari) */
+/* =======================================================
+   ESTILOS DE SCROLLBAR OPTIMIZADOS PARA TAILWIND v4 e IPAD
+   ======================================================= */
+
+/* 1. Propiedades base del contenedor de scroll */
+.custom-scrollbar {
+  overflow-y: auto !important;
+  /* Fuerza el comportamiento elástico nativo y activa la aceleración gráfica en iOS */
+  -webkit-overflow-scrolling: touch !important;
+  /* Soporte estándar directo para Firefox */
+  scrollbar-width: thin !important;
+  scrollbar-color: #d4d4d8 #f4f4f5 !important;
+}
+
+/* 2. Forzar visualización de la barra en motores Webkit (Chrome, Safari, iPadOS) */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px; /* Ancho de la barra */
-  height: 8px;
+  width: 8px !important;
+  height: 8px !important;
+  display: block !important; /* Evita que Apple destruya la barra al renderizar layouts dinámicos */
 }
 
+/* 3. El canal o riel de fondo (Zinc-100) */
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent; /* Fondo transparente */
+  background: #f4f4f5 !important;
+  border-radius: 100px !important;
 }
 
+/* 4. El indicador móvil en Escritorio (Zinc-300 con borde de aire) */
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #d4d4d8; /* Color gris suave */
-  border-radius: 20px;
-  border: 2px solid #ffffff; /* Crea un efecto de "flotado" */
-  transition: background 0.3s ease;
+  background: #d4d4d8 !important;
+  border-radius: 100px !important;
+  border: 2px solid #f4f4f5 !important;
 }
 
+/* 5. Comportamiento interactivo en Escritorio (Hover) */
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: #a1a1aa; /* Color más oscuro al pasar el mouse */
+  background: #a1a1aa !important; /* Zinc-400 */
+}
+
+/* 6. EL TRUCO MAESTRO PARA IPAD / PANTALLAS TÁCTILES */
+@media (pointer: coarse) {
+  /* Al detectar pantallas táctiles (iPads o tablets), forzamos un color más sólido (Zinc-500)
+     para contrarrestar la máscara de transparencia agresiva que mete Safari en iOS */
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #71717a !important; 
+  }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react';
 import ProductCard from './ProductCard';
 
@@ -11,6 +11,10 @@ interface FeaturedMiniShopProps {
 export default function FeaturedMiniShop({ featuredProducts }: FeaturedMiniShopProps) {
   const [activeFilter, setActiveFilter] = useState<string>('Todos');
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Estados para controlar dinámicamente la visibilidad de las flechas (Solo aplican en móviles)
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   // Sacamos las categorías únicas de los productos destacados
   const categories = useMemo(() => {
@@ -24,11 +28,37 @@ export default function FeaturedMiniShop({ featuredProducts }: FeaturedMiniShopP
     return featuredProducts.filter(p => p.category?.trim() === activeFilter);
   }, [featuredProducts, activeFilter]);
 
-  // Función para mover el carrusel
+  // Verificar si hay espacio para hacer scroll a la izquierda o derecha en móvil
+  const checkScrollPosition = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 2);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 2);
+    }
+  };
+
+  // Escuchar el scroll manual en dispositivos táctiles
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (scrollContainer) {
+      checkScrollPosition();
+      scrollContainer.addEventListener('scroll', checkScrollPosition);
+      window.addEventListener('resize', checkScrollPosition);
+    }
+
+    return () => {
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', checkScrollPosition);
+      }
+      window.removeEventListener('resize', checkScrollPosition);
+    };
+  }, [displayedProducts]);
+
+  // Función para mover el carrusel en móvil/tablet
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const { clientWidth } = scrollRef.current;
-      const scrollAmount = clientWidth > 1024 ? clientWidth * 0.75 : clientWidth * 0.9;
+      const scrollAmount = clientWidth * 0.85;
       scrollRef.current.scrollBy({ 
         left: direction === 'left' ? -scrollAmount : scrollAmount, 
         behavior: 'smooth' 
@@ -39,18 +69,18 @@ export default function FeaturedMiniShop({ featuredProducts }: FeaturedMiniShopP
   if (featuredProducts.length === 0) return null;
 
   return (
-    <div className="mb-16 relative max-w-[1400px] mx-auto px-4 md:px-8">
+    <div className="mb-20 bg-zinc-50 rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 md:p-12 border border-zinc-100 shadow-xl shadow-zinc-100/50">
       
-      {/* HEADER PREMIUM: ALINEACIÓN ASIMÉTRICA */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
-        <div className="space-y-2">
-          <h2 className="text-sm font-black text-sky-600 uppercase tracking-[0.2em]">
+      {/* HEADER PREMIUM: ALINEACIÓN ASIMÉTRICA CALCADA */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 sm:mb-10 gap-6">
+        <div className="space-y-1 sm:space-y-2">
+          <span className="text-[10px] bg-sky-500 text-white px-2.5 py-1 rounded-full font-black tracking-widest uppercase">
             Selección del Editor
-          </h2>
-          <h3 className="text-4xl md:text-5xl font-black text-zinc-950 tracking-tighter">
+          </span>
+          <h3 className="text-3xl sm:text-4xl md:text-5xl font-black text-zinc-950 tracking-tighter mt-2">
             Colección <span className="italic font-serif text-zinc-400 font-normal">Destacada</span>
           </h3>
-          <p className="text-zinc-500 font-medium text-sm md:text-base max-w-xl">
+          <p className="text-zinc-500 font-medium text-xs sm:text-sm md:text-base max-w-xl">
             Una curaduría intencional de piezas exclusivas diseñadas para aportar carácter, confort y sofisticación a tus espacios favoritos.
           </p>
         </div>
@@ -63,7 +93,7 @@ export default function FeaturedMiniShop({ featuredProducts }: FeaturedMiniShopP
           <select 
             value={activeFilter}
             onChange={(e) => setActiveFilter(e.target.value)}
-            className="w-full md:w-auto appearance-none bg-white border border-zinc-200 text-sm font-bold text-zinc-800 rounded-full py-3.5 pl-11 pr-12 outline-none cursor-pointer hover:border-sky-500 hover:shadow-md focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all min-w-[220px]"
+            className="w-full appearance-none bg-white border border-zinc-200 text-sm font-bold text-zinc-800 rounded-full py-3.5 pl-11 pr-12 outline-none cursor-pointer hover:border-sky-500 hover:shadow-md focus:border-sky-500 focus:ring-4 focus:ring-sky-500/10 transition-all min-w-[220px]"
           >
             {categories.map(cat => (
               <option key={cat} value={cat}>
@@ -77,51 +107,50 @@ export default function FeaturedMiniShop({ featuredProducts }: FeaturedMiniShopP
         </div>
       </div>
 
-      {/* CONTENEDOR DEL CARRUSEL Y BOTONES INTERACTIVOS */}
-      <div className="relative group/carousel">
+      {/* CONTENEDOR HÍBRIDO INTERACTIVO */}
+      <div className="relative px-1 md:px-0">
         
-        {/* Botón Izquierda con efecto cristal */}
-        {displayedProducts.length > 4 && (
-          <button 
-            onClick={() => scroll('left')} 
-            className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/90 backdrop-blur-md text-zinc-700 border border-zinc-100 rounded-full shadow-xl opacity-0 group-hover/carousel:opacity-100 hover:bg-zinc-950 hover:text-white hover:border-zinc-950 transition-all duration-300 hidden md:block"
-            aria-label="Anterior"
-          >
-            <ChevronLeft size={22} />
-          </button>
-        )}
+        {/* Botón Izquierda Estético - Solo renderiza en móviles/tablets si hay scroll */}
+        <button 
+          onClick={() => scroll('left')} 
+          className={`absolute -left-2 top-1/2 -translate-y-1/2 z-20 p-2.5 bg-white/90 backdrop-blur-md text-zinc-700 border border-zinc-200/60 rounded-full shadow-md transition-all duration-300 active:scale-95 cursor-pointer md:hidden
+            ${canScrollLeft ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
+          aria-label="Anterior"
+        >
+          <ChevronLeft size={18} />
+        </button>
 
-        {/* CARRUSEL DE PRODUCTOS */}
+        {/* COMPONENTE HÍBRIDO: flex horizontal en móvil, grid limpio de 4 columnas en PC */}
         <div 
           ref={scrollRef} 
-          className="flex overflow-x-auto gap-6 pb-4 snap-x snap-mandatory hide-scrollbar items-stretch"
+          className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-4 gap-5 pt-2 pb-8 md:pb-2 snap-x snap-mandatory hide-scrollbar items-start"
         >
           {displayedProducts.map((product) => (
+            /* Usamos w-[265px] para calcar la estética premium de Unimart en teléfonos */
             <div 
               key={product.id} 
-              className="flex-none w-[85vw] sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] snap-start h-full"
+              className="flex-none w-[265px] md:w-auto snap-start"
             >
               <ProductCard product={product} />
             </div>
           ))}
           
           {displayedProducts.length === 0 && (
-            <div className="w-full text-center py-16 bg-white rounded-3xl border border-zinc-100 text-zinc-400 font-medium">
+            <div className="w-full text-center py-16 bg-white rounded-3xl border border-zinc-100 text-zinc-400 font-medium md:col-span-4">
               No hay artículos destacados en esta categoría actualmente.
             </div>
           )}
         </div>
 
-        {/* Botón Derecha con efecto cristal */}
-        {displayedProducts.length > 4 && (
-          <button 
-            onClick={() => scroll('right')} 
-            className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/90 backdrop-blur-md text-zinc-700 border border-zinc-100 rounded-full shadow-xl opacity-0 group-hover/carousel:opacity-100 hover:bg-zinc-950 hover:text-white hover:border-zinc-950 transition-all duration-300 hidden md:block"
-            aria-label="Siguiente"
-          >
-            <ChevronRight size={22} />
-          </button>
-        )}
+        {/* Botón texturizado Derecha Estético */}
+        <button 
+          onClick={() => scroll('right')} 
+          className={`absolute -right-2 top-1/2 -translate-y-1/2 z-20 p-2.5 bg-white/90 backdrop-blur-md text-zinc-700 border border-zinc-200/60 rounded-full shadow-md transition-all duration-300 active:scale-95 cursor-pointer md:hidden
+            ${canScrollRight ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
+          aria-label="Siguiente"
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
 
       <style jsx global>{`

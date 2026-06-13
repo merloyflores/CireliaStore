@@ -351,23 +351,17 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
     }
   };
 
-  return (
-    <div 
-      className="fixed top-0 left-0 w-screen h-screen bg-zinc-950/70 backdrop-blur-md z-99999 flex items-center justify-center p-4 sm:p-6"
-      style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
-    >
-      {/* MODIFICADO: Ajustado el max-w para acomodar 3 columnas elegantes (max-w-6xl y xl:max-w-[1200px]) */}
-      <div className="bg-white w-full max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-[1200px] rounded-3xl sm:rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-zinc-100 p-4 sm:p-8 relative animate-in zoom-in-95 fade-in duration-300 max-h-[92vh] sm:max-h-[95vh] overflow-y-auto custom-scrollbar">
-        
-        <button 
-          onClick={onClose}
-          className="absolute top-6 right-6 p-2 bg-zinc-50 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200 hover:rotate-90 rounded-full transition-all duration-300 z-10"
-          title="Cerrar ventana"
-        >
-          <X size={20} strokeWidth={2.5} />
-        </button>
-
-        <div className="mb-6">
+return (
+  <div 
+    className="fixed top-0 left-0 w-screen h-screen bg-zinc-950/70 backdrop-blur-md z-99999 flex items-center justify-center p-4 sm:p-6"
+    style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
+  >
+    {/* CONTENEDOR PRINCIPAL DEL MODAL */}
+    <div className="bg-white w-full max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-300 rounded-3xl sm:rounded-4xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-zinc-100 relative animate-in zoom-in-95 fade-in duration-300 max-h-[92vh] sm:max-h-[95vh] flex flex-col overflow-hidden">
+      
+      {/* 1. CABECERA ESTÁTICA CON EFECTO GLASS */}
+      <div className="sticky top-0 left-0 right-0 bg-white/90 backdrop-blur-md pt-6 pb-4 px-6 sm:pt-8 sm:pb-5 sm:px-8 border-b border-zinc-100 flex items-start justify-between z-20">
+        <div>
           <h2 className="text-2xl font-black text-zinc-950 tracking-tight">
             {productToEdit ? 'Editar Producto' : 'Nuevo Producto'}
           </h2>
@@ -375,14 +369,27 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
             {productToEdit ? 'Modifica los detalles de tu inventario.' : 'Añade un nuevo artículo al catálogo de Cirelia.'}
           </p>
         </div>
+        
+        <button 
+          onClick={onClose}
+          type="button"
+          className="p-2 bg-zinc-50 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200 hover:rotate-90 rounded-full transition-all duration-300 cursor-pointer self-center"
+          title="Cerrar ventana"
+        >
+          <X size={20} strokeWidth={2.5} />
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+      {/* ABRIMOS EL FORMULARIO AQUÍ: Para que abrace tanto al scroll como a los botones del fondo */}
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+        {/* 2. CUERPO DEL FORMULARIO (Zona con Scrollbar) */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar pt-6 pb-6 pl-6 pr-8 sm:pt-8 sm:pb-8 sm:pl-8 sm:pr-10">
           
           {/* DISTRIBUCIÓN GRID EN ESCRITORIO: 3 Columnas Balanceadas */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
-            
-            {/* COLUMNA 1: Identidad e Inventario básico */}
-            <div className="space-y-5">
+              
+              {/* COLUMNA 1: Identidad e Inventario básico */}
+              <div className="space-y-5">
               
               {/* NOMBRE DEL PRODUCTO */}
               <div>
@@ -891,7 +898,7 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
                       <AlignLeft className="h-4 w-4 text-zinc-400" />
                     </div>
                     
-                    <div className="min-h-[250px] lg:min-h-[380px] max-h-[450px] overflow-y-auto">
+                    <div className="min-h-62.5 lg:min-h-95 max-h-112.5 overflow-y-auto">
                       <EditorContent
                         editor={editor}
                         className="prose prose-sm max-w-none p-3 pl-10 focus:outline-none"
@@ -904,19 +911,19 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
 
           </div>
 
-          {/* ACCIONES DEL FORMULARIO */}
-          <div className="flex gap-3 pt-6 mt-4 border-t border-zinc-100">
+          {/* ACCIONES DEL FORMULARIO - EFECTO GLASS APPLE */}
+          <div className="sticky bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md pt-4 pb-4 mt-6 border-t border-zinc-100 flex gap-3 z-10">
             <button 
               type="button" 
               onClick={onClose}
-              className="flex-1 h-14 rounded-xl bg-white border border-zinc-200 text-zinc-600 font-bold text-sm hover:bg-zinc-50 hover:text-zinc-950 transition-all"
+              className="flex-1 h-14 rounded-xl bg-white/50 border border-zinc-200/80 text-zinc-600 font-bold text-sm hover:bg-white/90 hover:text-zinc-950 transition-all cursor-pointer backdrop-blur-xs"
             >
               Cancelar
             </button>
             <button 
               type="submit" 
               disabled={submitting}
-              className="flex-1 h-14 bg-linear-to-br from-sky-500 to-sky-600 text-white rounded-xl font-bold text-sm hover:from-sky-400 hover:to-sky-500 hover:-translate-y-0.5 shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:translate-y-0"
+              className="flex-1 h-14 bg-linear-to-br from-sky-500/90 to-sky-600/90 text-white rounded-xl font-bold text-sm hover:from-sky-400 hover:to-sky-500 hover:-translate-y-0.5 shadow-lg shadow-sky-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:translate-y-0 cursor-pointer backdrop-blur-xs"
             >
               {submitting ? (
                 <><Loader2 size={18} className="animate-spin" /> Guardando...</>
@@ -925,7 +932,8 @@ export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit
               )}
             </button>
           </div>
-        </form>
+        </div>
+      </form>
 
         <CategoryModal 
           isOpen={isCategoryModalOpen} 

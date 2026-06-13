@@ -3,8 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '../lib/supabase';
-import SectionContainer from "../components/SectionContainer";
-import ProductCard from "../components/ProductCard";
 import CategoryRow from '@/components/CategoryRow';
 import PromoBanner from '@/components/PromoBanner';
 import PromoSection from '@/components/PromoSection';
@@ -97,9 +95,9 @@ export default function Home() {
   }, [groupedProducts, strongCategoryName]);
 
   return (
-    <div className="flex flex-col w-full">
-      {/* 1. SECCIÓN HERO */}
-      <section className="relative min-h-[85vh] sm:h-[85vh] w-full bg-zinc-100 flex items-center justify-center overflow-hidden pt-16 pb-24 sm:py-0">        
+    <div className="flex flex-col w-full bg-[#F3F3F4]">
+      {/* 1. SECCIÓN HERO - PANTALLA COMPLETA */}
+      <section className="relative min-h-screen sm:h-screen w-full bg-zinc-100 flex items-center justify-center overflow-hidden pt-20 pb-28 sm:py-0">     
         <div className="absolute inset-0 z-0 bg-zinc-950">
           <video 
             key={videoSources[currentIndex]}
@@ -123,7 +121,7 @@ export default function Home() {
             Hogares que <br /> cuentan <span className="text-transparent bg-clip-text bg-linear-to-r from-sky-600 to-indigo-600">historias.</span>
           </h1>
           <p className="text-zinc-700 text-base md:text-lg max-w-2xl mx-auto mb-10 font-medium">
-            Descubre piezas de diseño únicas que transforman tu espacio en un refugio de elegancia y confort. Calidad premium para quienes exigen lo mejor.
+            Descubre piezas de diseño uniques que transforman tu espacio en un refugio de elegancia y confort. Calidad premium para quienes exigen lo mejor.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -154,10 +152,9 @@ export default function Home() {
         </a>
       </section>
 
-      {/* 2. SECCIÓN DE COLECCIONES */}
-      {/* AJUSTE 1: Cambiamos py-24 a py-12 (o py-16) para reducir el espacio arriba y abajo de toda la sección */}
-      <section id="destacados-section" className="py-12 md:py-16 bg-[#F3F3F4] overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
+      {/* 2. SECCIÓN GLOBAL DE PRODUCTOS */}
+      <section id="destacados-section" className="py-6 md:py-10 overflow-hidden">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 md:px-8">
           
           {isLoading ? (
             <div className="text-center py-20 text-zinc-400 font-medium flex flex-col items-center gap-4">
@@ -165,10 +162,9 @@ export default function Home() {
               Cargando colecciones exclusivas...
             </div>
           ) : (
-            <div className="flex flex-col gap-8 md:gap-10">
-              {/* AJUSTE 2: Cambiamos gap-16 por gap-8 (o gap-10) para juntar más las filas entre sí */}
+            <div className="flex flex-col gap-6 md:gap-8">
               
-              {/* FILA 1: PRODUCTOS DINÁMICOS/VARIADOS */}
+              {/* FILA 1: TENDENCIAS DEL MOMENTO */}
               {dynamicMixedProducts.length > 0 && (
                 <CategoryRow 
                   category="Tendencias del Momento" 
@@ -177,7 +173,7 @@ export default function Home() {
                 />
               )}
 
-              {/* FILA 2: CATEGORÍA ESPECÍFICA (Ejemplo: Sala) */}
+              {/* FILA 2: CATEGORÍA FUERTE (SALA) */}
               {strongCategoryProducts.length > 0 && (
                 <CategoryRow 
                   category={strongCategoryName} 
@@ -186,9 +182,8 @@ export default function Home() {
                 />
               )}
               
-              {/* FILA 3: BANNER Y DEPORTES */}
-              {/* AJUSTE 3: Quitamos el py-4 extra que tenía este div para no sumar más espacio */}
-              <div>
+              {/* FILA 3: BANNER Y DEPORTES COMPACTOS */}
+              <div className="space-y-4">
                 <PromoBanner 
                   image="/banner1.png" 
                   title="Descuentos Goleadores" 
@@ -197,23 +192,19 @@ export default function Home() {
                 />
 
                 {randomSportsProducts.length > 0 && (
-                  <div className="mt-6">
-                    <CategoryRow 
-                      category="Deportes" 
-                      products={randomSportsProducts} 
-                    />
-                  </div>
+                  <CategoryRow 
+                    category="Deportes" 
+                    products={randomSportsProducts} 
+                  />
                 )}
               </div>
 
-              {/* FILA 4: ARTÍCULOS SELECCIONADOS (Featured) */}
+              {/* FILA 4: LIBERACIÓN DEL FEATURED MINI SHOP */}
               {featuredProducts.length > 0 && (
-                <div className="bg-linear-to-br from-sky-500/5 to-indigo-500/5 rounded-[2.5rem] p-8 md:p-10 border border-sky-500/10 shadow-sm">
-                  <FeaturedMiniShop featuredProducts={featuredProducts} />
-                </div>
+                <FeaturedMiniShop featuredProducts={featuredProducts} />
               )}
 
-              {/* FILA 5: PROMOCIONES (Con su propio banner) */}
+              {/* FILA 5: SECCIÓN DE PROMOCIONES CON ALIMENTACIÓN DE DATOS CORREGIDA */}
               {promoProducts.length > 0 && (
                 <PromoSection 
                   promoProducts={promoProducts} 
@@ -232,11 +223,10 @@ export default function Home() {
             </div>
           )}
 
-          {/* Botón Final para ver el catálogo completo */}
-          {/* AJUSTE 4: Cambiamos mt-20 a mt-12 para acercar el botón a la última categoría */}
+          {/* Botón Final */}
           {!isLoading && products.length > 0 && (
-            <div className="mt-12 text-center">
-              <Link href="/shop" className="inline-block bg-zinc-950 text-white px-12 py-5 rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-md">
+            <div className="mt-10 text-center">
+              <Link href="/shop" className="inline-block bg-zinc-950 text-white px-12 py-4.5 rounded-2xl font-bold hover:bg-sky-600 transition-all shadow-md">
                 IR AL CATÁLOGO COMPLETO
               </Link>
             </div>
@@ -245,23 +235,23 @@ export default function Home() {
       </section>
 
       {/* 3. SECCIÓN DE VALORES Y CONFIANZA */}
-      <section className="py-24 bg-white border-t border-zinc-100">
+      <section className="py-16 bg-white border-t border-zinc-100">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h3 className="text-sm font-black text-sky-600 uppercase tracking-[0.2em] mb-3">Nuestra Promesa</h3>
-            <h2 className="text-4xl md:text-5xl font-black text-zinc-950 tracking-tighter">Más que muebles, experiencias.</h2>
+          <div className="text-center mb-12">
+            <h3 className="text-sm font-black text-sky-600 uppercase tracking-[0.2em] mb-2">Nuestra Promesa</h3>
+            <h2 className="text-3xl md:text-4xl font-black text-zinc-950 tracking-tighter">Más que muebles, experiencias.</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { icon: Truck, title: "Envío Prioritario", desc: "Logística propia para que tu pieza llegue impecable y en tiempo récord." },
               { icon: ShieldCheck, title: "Garantía Extendida", desc: "Seleccionamos materiales de alta gama con respaldo total de fábrica." },
               { icon: MessageSquare, title: "Asesoría Experta", desc: "Nuestro equipo de diseño te acompaña en cada elección, sin compromiso." }
             ].map((item, i) => (
-              <div key={i} className="p-8 bg-zinc-50 rounded-3xl border border-zinc-100 hover:border-sky-200 transition-all hover:shadow-xl hover:shadow-sky-500/5 group">
-                <item.icon className="w-10 h-10 text-sky-600 mb-6 group-hover:scale-110 transition-transform" />
-                <h4 className="text-lg font-black text-zinc-950 mb-3">{item.title}</h4>
-                <p className="text-zinc-500 text-sm leading-relaxed">{item.desc}</p>
+              <div key={i} className="p-6 bg-zinc-50 rounded-3xl border border-zinc-100 hover:border-sky-200 transition-all hover:shadow-xl hover:shadow-sky-500/5 group">
+                <item.icon className="w-9 h-9 text-sky-600 mb-4 group-hover:scale-110 transition-transform" />
+                <h4 className="text-md font-black text-zinc-950 mb-2">{item.title}</h4>
+                <p className="text-zinc-500 text-xs sm:text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -269,29 +259,29 @@ export default function Home() {
       </section>
 
       {/* 4. SECCIÓN DE TESTIMONIOS */}
-      <section className="py-24 bg-zinc-950 text-white overflow-hidden">
+      <section className="py-16 bg-zinc-950 text-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-sm font-black text-sky-500 uppercase tracking-[0.2em] mb-4">Lo que dicen de nosotros</h2>
-            <p className="text-3xl md:text-5xl font-black tracking-tighter">Historias reales de hogares felices</p>
+          <div className="text-center mb-12">
+            <h2 className="text-sm font-black text-sky-500 uppercase tracking-[0.2em] mb-2">Lo que dicen de nosotros</h2>
+            <p className="text-2xl md:text-4xl font-black tracking-tighter">Historias reales de hogares felices</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { text: "La compra no solo cambió el look de mi sala, cambió cómo nos sentimos al llegar a casa. La calidad es inigualable.", name: "María Fernández", role: "Diseñadora de Interiores", bg: "bg-[url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200')]" },
               { text: "La atención al detalle y la rapidez de entrega superaron todas mis expectativas. Son un estándar de calidad.", name: "Carlos Méndez", role: "Arquitecto", bg: "bg-[url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200')]" },
               { text: "Transformaron mi oficina en un espacio inspirador. El proceso de compra fue increíblemente sencillo y seguro.", name: "Elena Gómez", role: "Emprendedora", bg: "bg-[url('https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=200')]" }
             ].map((testimonio, i) => (
-              <div key={i} className="group p-8 rounded-[2rem] bg-zinc-900 border border-zinc-800 hover:border-sky-500/50 transition-all duration-500">
-                <div className="mb-6 text-amber-400">★★★★★</div>
-                <p className="text-zinc-300 mb-8 italic leading-relaxed">"{testimonio.text}"</p>
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full ${testimonio.bg} bg-cover bg-center border-2 border-zinc-700 group-hover:border-sky-500 transition-colors relative`}>
+              <div key={i} className="group p-6 rounded-[2rem] bg-zinc-900 border border-zinc-800 hover:border-sky-500/50 transition-all duration-500">
+                <div className="mb-4 text-amber-400 text-sm">★★★★★</div>
+                <p className="text-zinc-300 text-sm mb-6 italic leading-relaxed">"{testimonio.text}"</p>
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-full ${testimonio.bg} bg-cover bg-center border-2 border-zinc-700 group-hover:border-sky-500 transition-colors relative`}>
                     <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] rounded-full"></div>
                   </div>
                   <div>
-                    <p className="font-bold text-white">{testimonio.name}</p>
-                    <p className="text-zinc-500 text-xs uppercase tracking-wider">{testimonio.role}</p>
+                    <p className="font-bold text-sm text-white">{testimonio.name}</p>
+                    <p className="text-zinc-500 text-[10px] uppercase tracking-wider">{testimonio.role}</p>
                   </div>
                 </div>
               </div>
@@ -301,28 +291,28 @@ export default function Home() {
       </section>
 
       {/* 5. NEWSLETTER */}
-      <section className="py-32 bg-white">
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="relative bg-zinc-950 rounded-[2.5rem] p-12 md:p-20 text-center overflow-hidden">
+          <div className="relative bg-zinc-950 rounded-[2.5rem] p-10 md:p-16 text-center overflow-hidden">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-sky-500/10 blur-[120px] rounded-full pointer-events-none"></div>
             <div className="relative z-10">
-              <h3 className="text-3xl md:text-5xl font-black text-white tracking-tighter mb-6">
+              <h3 className="text-2xl md:text-4xl font-black text-white tracking-tighter mb-4">
                 Sé parte de nuestra exclusividad<span className="text-sky-500">.</span>
               </h3>
-              <p className="text-zinc-400 text-lg mb-12 max-w-md mx-auto leading-relaxed font-light">
+              <p className="text-zinc-400 text-sm md:text-base mb-8 max-w-md mx-auto leading-relaxed font-light">
                 Suscríbete para recibir acceso anticipado a nuestras colecciones y curaduría exclusiva de diseño para tu hogar.
               </p>
               <form className="relative flex flex-col sm:flex-row gap-3 max-w-sm mx-auto" onSubmit={(e) => e.preventDefault()}>
                 <input 
                   type="email" 
                   placeholder="Ingresa tu correo" 
-                  className="w-full bg-zinc-900 border border-zinc-800 text-white px-6 py-4 rounded-full focus:outline-none focus:border-sky-500 transition-colors placeholder:text-zinc-600"
+                  className="w-full bg-zinc-900 border border-zinc-800 text-white px-5 py-3.5 rounded-full focus:outline-none focus:border-sky-500 transition-colors placeholder:text-zinc-600 text-sm"
                 />
-                <button className="bg-white text-zinc-950 px-8 py-4 rounded-full font-bold hover:bg-sky-500 hover:text-white transition-all duration-300">
+                <button className="bg-white text-zinc-950 px-6 py-3.5 rounded-full font-bold hover:bg-sky-500 hover:text-white transition-all duration-300 text-sm">
                   Unirme
                 </button>
               </form>
-              <p className="mt-8 text-[10px] text-zinc-600 uppercase tracking-[0.2em]">
+              <p className="mt-6 text-[9px] text-zinc-600 uppercase tracking-[0.2em]">
                 Sin spam, solo inspiración de alto nivel.
               </p>
             </div>

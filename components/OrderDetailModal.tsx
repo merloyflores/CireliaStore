@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-// ❌ ELIMINAMOS ESTA LÍNEA: import { Order } from '@/lib/types'; 
 import { 
   X, 
   MessageSquare, 

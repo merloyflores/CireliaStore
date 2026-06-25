@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-//import { Order as DBOrder } from '@/lib/types';
+import { Order as DBOrder } from '@/lib/types';
 import { 
   Truck, 
   Package, 
@@ -487,7 +487,7 @@ export default function VentasPage() {
       {selectedOrder && (
         <OrderDetailModal 
           isOpen={!!selectedOrder}
-          order={selectedOrder}
+          order={selectedOrder as any} // <-- SOLUCIÓN: Forzamos el tipado para ignorar el conflicto de null vs undefined
           onClose={() => setSelectedOrder(null)}
         />
       )}

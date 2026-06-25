@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Order } from '@/lib/types';
+// ❌ ELIMINAMOS ESTA LÍNEA: import { Order } from '@/lib/types'; 
 import { 
   X, 
   MessageSquare, 
@@ -17,19 +17,19 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-
 // ================= TIPADO DE COMPONENTES =================
+// 👇 El componente usará esta interfaz local sin conflictos
 export interface Order {
   id: string;
-  invoice_number?: string | number;
-  order_notes?: string;
-  shipping_cost?: number;
+  invoice_number?: string | number | null;
+  order_notes?: string | null;
+  shipping_cost?: number | null;
   total_amount: number;
-  payment_method?: string;
-  delivery_method?: string;
+  payment_method?: string | null;
+  delivery_method?: string | null;
   users?: {
     name: string;
-  };
+  } | null;
 }
 
 interface ProductRelation {

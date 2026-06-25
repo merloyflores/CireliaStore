@@ -23,7 +23,7 @@ export default function MensajesPage() {
       </div>
 
       {/* BANDEJA DE ENTRADA */}
-      <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-[500px]">
+      <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm overflow-hidden flex flex-col md:flex-row min-h-125">
         
         {/* LISTADO LATERAL DE MENSAJES */}
         <div className="w-full md:w-80 border-r border-zinc-100 flex flex-col">

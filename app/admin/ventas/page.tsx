@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Order } from '@/lib/types';
+import { Order as DBOrder } from '@/lib/types';
 import { 
   Truck, 
   Package, 
@@ -251,9 +251,10 @@ export default function VentasPage() {
           {/* Contenedor de Filtros */}
           <div className="flex flex-wrap w-full lg:w-auto gap-2">
             <select 
+              aria-label="Filtrar por mes"
               value={filterMonth} 
               onChange={(e) => setFilterMonth(e.target.value)}
-              className="flex-1 lg:flex-none py-2.5 px-3 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm font-bold text-zinc-700 outline-none cursor-pointer shadow-sm hover:border-zinc-300 min-w-[90px]"
+              className="flex-1 lg:flex-none py-2.5 px-3 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm font-bold text-zinc-700 outline-none cursor-pointer shadow-sm hover:border-zinc-300 min-w-22.5"
             >
               <option value="all">Todos los Meses</option>
               {['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map((m, i) => (
@@ -262,9 +263,10 @@ export default function VentasPage() {
             </select>
 
             <select 
+              aria-label="Filtrar por año"
               value={filterYear} 
               onChange={(e) => setFilterYear(e.target.value)}
-              className="flex-1 lg:flex-none py-2.5 px-3 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm font-bold text-zinc-700 outline-none cursor-pointer shadow-sm hover:border-zinc-300 min-w-[90px]"
+              className="flex-1 lg:flex-none py-2.5 px-3 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm font-bold text-zinc-700 outline-none cursor-pointer shadow-sm hover:border-zinc-300 min-w-22.5"
             >
               <option value="all">Años</option>
               <option value="2026">2026</option>
@@ -272,9 +274,10 @@ export default function VentasPage() {
             </select>
 
             <select 
+              aria-label="Filtrar por estado"
               value={filterStatus} 
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="flex-1 lg:flex-none py-2.5 px-3 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm font-bold text-zinc-700 outline-none cursor-pointer shadow-sm hover:border-zinc-300 min-w-[120px]"
+              className="flex-1 lg:flex-none py-2.5 px-3 bg-white border border-zinc-200 rounded-xl text-xs sm:text-sm font-bold text-zinc-700 outline-none cursor-pointer shadow-sm hover:border-zinc-300 min-w-30"
             >
               <option value="all">Todos los Estados</option>
               {Object.entries(statusMap).map(([key, value]) => (
@@ -373,6 +376,7 @@ export default function VentasPage() {
                       {/* <-- AÑADIDO: onClick e.stopPropagation() para que el click aquí NO abra el modal */}
                       <div className="relative group" onClick={(e) => e.stopPropagation()}>
                         <select
+                          aria-label="Actualizar estado del pedido"
                           value={order.status}
                           onChange={(e) => handleStatusChange(order.id, e.target.value)}
                           disabled={isUpdating}
@@ -399,7 +403,7 @@ export default function VentasPage() {
                         <div className={`
                           absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none 
                           transition-transform duration-300
-                          ${isUpdating ? 'animate-spin' : 'group-hover:translate-y-[-2px]'}
+                          ${isUpdating ? 'animate-spin' : 'group-hover:-translate-y-0.5'}
                         `}>
                           {isUpdating ? (
                             <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full opacity-70"></div>
@@ -424,6 +428,7 @@ export default function VentasPage() {
             <div className="flex items-center gap-2 text-sm text-zinc-500 font-medium w-full sm:w-auto justify-center">
               <span>Mostrar</span>
               <select 
+                aria-label="Seleccionar cantidad de elementos por página"
                 value={itemsPerPage}
                 onChange={(e) => {
                   setItemsPerPage(Number(e.target.value));
@@ -452,7 +457,7 @@ export default function VentasPage() {
                 >
                   <ChevronLeft size={18} />
                 </button>
-                <span className="px-3 py-1 text-sm font-bold text-zinc-900 min-w-[2rem] text-center">
+                <span className="px-3 py-1 text-sm font-bold text-zinc-900 min-w-8 text-center">
                   {currentPage}
                 </span>
                 <button 

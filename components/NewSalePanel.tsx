@@ -1,13 +1,16 @@
+'use client';
+
 import { useState } from 'react';
 import { X, UserPlus, ShoppingBag, CreditCard, ChevronDown, Trash, Truck, Loader2 } from 'lucide-react';
 import ClientSelectorModal from './ClientSelectorModal';
 import ProductSelectorModal from './ProductSelectorModal';
-import { supabase } from '@/lib/supabase'; // <-- Importación de Supabase
+import { createClient } from '@/lib/supabase/client'; // <-- Importación de Supabase
 
 const paymentMethods = ['SINPE Móvil', 'Efectivo', 'Tarjeta POS', 'Emma Pay', 'Transferencia IBAN'];
 const deliveryMethods = ['Recogida en tienda', 'Correos de Costa Rica', 'Uber Flash', 'DiDi Entrega', 'inDrive', 'Taxi', 'Transportista', 'Entrega Personal'];
 
 export default function NewSalePanel({ isOpen, onClose }: any) {
+  const supabase = createClient();
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [deliveryMethod, setDeliveryMethod] = useState(deliveryMethods[0]);

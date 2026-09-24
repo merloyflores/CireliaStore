@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { X, Image as ImageIcon, Loader2, Upload, Trash2, Images, Check } from 'lucide-react';
 
 interface GalleryModalProps {
@@ -12,6 +12,7 @@ interface GalleryModalProps {
 }
 
 export default function GalleryModal({ isOpen, onClose, onSuccess, productId }: GalleryModalProps) {
+  const supabase = createClient();
   // PESTAÑA ACTIVA: 'upload' para nuevas, 'existing' para ver y borrar las de la base de datos
   const [activeTab, setActiveTab] = useState<'upload' | 'existing'>('upload');
 

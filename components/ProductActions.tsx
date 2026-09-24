@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useCartStore } from '../app/store/useCartStore'; 
+import { useCartStore } from '../app/store/useCartStore';
 import { ShoppingCart, Heart, Minus, Plus, Trash2, Check, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { useTenantSettings } from '@/lib/useTenantSettings';
 
 export default function ProductActions({ product }: { product: any }) {
   const { addToCart, removeFromCart, cart, toggleFavorite, favorites } = useCartStore();
+  const { settings } = useTenantSettings();
   
   const cartItem = cart.find((item) => item.id === product.id);
   const isFavorite = favorites.some((fav) => fav.id === product.id);
@@ -20,7 +22,7 @@ export default function ProductActions({ product }: { product: any }) {
     const mensaje = isOutOfStock
       ? `¡Hola Cirelia! 👋 Me interesa consultar si volverán a tener stock de: *${product.name}*.`
       : `¡Hola Cirelia! 👋 Me interesa obtener más información sobre: *${product.name}*. ¿Podrían ayudarme?`;
-    window.open(`https://wa.me/50670305676?text=${encodeURIComponent(mensaje)}`, '_blank');
+    window.open(`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
   return (

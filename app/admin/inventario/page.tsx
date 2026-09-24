@@ -1,667 +1,426 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '../../../lib/supabase';
-// Importamos ChevronLeft y ChevronRight para los botones de paginación
-import { Tag, Zap, Settings2, Plus, Trash2, Edit3, Image as ImageIcon, Loader2, LogOut, MessageSquare, Star, X, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import ProductModal from '../../../components/ProductModal'; 
-import ChatHistoryView from '@/components/ChatHistoryView'; 
-import ProductFeedbackView from '@/components/ProductFeedbackView';
-import SpecManagerModal from '@/components/SpecManagerModal';
-import ProductFeaturedModal from '@/components/ProductFeaturedModal';
-import BulkPromoModal from '@/components/BulkPromoModal';
+import { useEffect, useState, useCallback } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/app/providers';
+import {
+  Plus, Search, Edit3, Trash2, Loader2, PackageX, Star, ChevronLeft, ChevronRight,
+  MessageSquare, ThumbsUp, Layers, X,
+} from 'lucide-react';
+import ProductFormModal, { EditableProduct } from '@/components/ProductFormModal';
+import FeedbackPanel from '@/components/FeedbackPanel';
 
-const COLOR_MAP: Record<string, string> = {
-  // --- TUS METÁLICOS Y VALIOSOS ---
-  'dorado': '#D4AF37', 'gold': '#D4AF37',
-  'plata': '#C0C0C0', 'plateado': '#E5E7EB', 'silver': '#C0C0C0',
-  'oro rosa': '#B76E79', 'rose gold': '#B76E79',
-  'bronce': '#CD7F32', 'bronze': '#CD7F32',
-  'cobre': '#B87333', 'copper': '#B87333',
-  'champagne': '#F7E7CE',
+const PAGE_SIZE = 15;
 
-  // --- LOS MINIMALISTAS DE FÁBRICA ---
-  'crudo': '#FDFBF7', 'raw': '#FDFBF7',
-  'arena': '#E6D5C3', 'sand': '#E6D5C3',
-  'terracota': '#C86A4B', 'terracotta': '#C86A4B',
-  'oliva': '#707A5A', 'olive': '#707A5A',
-  'carbón': '#2C2C2C', 'charcoal': '#2C2C2C',
+function money(amount: number) {
+  return new Intl.NumberFormat('es-CR', { style: 'currency', currency: 'CRC', maximumFractionDigits: 0 }).format(amount);
+}
 
-  // --- MONOCROMÁTICOS Y NEUTROS PRO ---
-  'negro': '#09090b', 'black': '#000000',
-  'blanco': '#ffffff', 'white': '#ffffff',
-  'gris': '#71717A', 'gray': '#71717A', 'grey': '#71717A',
-  'grafito': '#3F3F46', 'graphite': '#3F3F46',
-  'crema': '#FFFDD0', 'cream': '#FFFDD0',
-  'marfil': '#FFFFF0', 'ivory': '#FFFFF0',
-  'beige': '#F5F5DC', 'taupe': '#483C32',
-
-  // --- TONOS VIVOS E INTENSOS ---
-  'rojo': '#EF4444', 'red': '#EF4444',
-  'azul': '#3B82F6', 'blue': '#3B82F6',
-  'verde': '#22C55E', 'green': '#22C55E',
-  'rosado': '#F472B6', 'pink': '#F472B6',
-  'naranja': '#F97316', 'orange': '#F97316',
-  'amarillo': '#EAB308', 'yellow': '#EAB308',
-  'púrpura': '#A855F7', 'purple': '#A855F7', 'morado': '#8B5CF6',
-  'ciruela': '#8E4585', 'plum': '#8E4585',
-
-  // --- PALETA CÁLIDA, MUEBLES Y TEXTILES ---
-  'marrón': '#78350F', 'brown': '#78350F', 'cafe': '#78350F', 'café': '#78350F',
-  'chocolate': '#451A03',
-  'mostaza': '#CA8A04', 'mustard': '#CA8A04',
-  'ocre': '#C68E17', 'ochre': '#C68E17',
-  'vino': '#7F1D1D', 'burgundy': '#7F1D1D', 'burdeos': '#7F1D1D',
-  'coral': '#F87171',
-  'salmón': '#FA8072', 'salmon': '#FA8072',
-  'durazno': '#FFDAB9', 'peach': '#FFDAB9',
-  'fucsia': '#D946EF', 'fuchsia': '#D946EF',
-
-  // --- PALETA BOTÁNICA, NÓRDICA Y OCÉANO ---
-  'esmeralda': '#047857', 'emerald': '#047857',
-  'menta': '#A7F3D0', 'mint': '#A7F3D0',
-  'turquesa': '#06B6D4', 'turquoise': '#06B6D4',
-  'celeste': '#BAE6FD', 'sky blue': '#BAE6FD',
-  'marino': '#1E3A8A', 'navy': '#1E3A8A',
-  'azul marino': '#1E3A8A',
-  'índigo': '#4338CA', 'indigo': '#4338CA',
-  'lavanda': '#E9D5FF', 'lavender': '#E9D5FF',
-  'lila': '#F3E8FF', 'lilac': '#F3E8FF',
-  'musgo': '#8A9A5B', 'moss': '#8A9A5B',
-  'salvia': '#9DC183', 'sage': '#9DC183',
-  'bosque': '#228B22', 'forest': '#228B22',
-  'denim': '#1560BD'
+type ProductRow = {
+  id: string;
+  name: string;
+  price: number;
+  sale_price: number | null;
+  is_on_sale: boolean;
+  stock: number;
+  sku: string | null;
+  is_active: boolean;
+  is_featured: boolean;
+  description: string | null;
+  category_id: string | null;
+  product_type_id: string | null;
+  attributes: Record<string, any>;
+  categories: { name: string } | null;
+  product_media: { url: string; position: number }[];
+  product_variants: { id: string }[];
 };
 
-export default function AdminDashboard() {
-  const router = useRouter();
-  
-  // ESTADOS ORIGINALES
-  const [products, setProducts] = useState<any[]>([]);
+export default function InventarioPage() {
+  const supabase = createClient();
+  const { profile } = useAuth();
+  const tenantId = profile?.tenant_id;
+
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; parent_id: string | null }[]>([]);
+  const [productTypes, setProductTypes] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [chats, setChats] = useState<any[]>([]);
-  const [isBulkPromoOpen, setIsBulkPromoOpen] = useState(false); 
-  
-  const [activeModal, setActiveModal] = useState<'chats' | 'feedback' | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [isSpecsModalOpen, setIsSpecsModalOpen] = useState(false);
-  const [productToEditSpecs, setProductToEditSpecs] = useState<any>(null);
-  const [isFeaturedModalOpen, setIsFeaturedModalOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [onlyFeatured, setOnlyFeatured] = useState(false);
+  const [page, setPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
-  // ESTADOS PARA FILTROS Y BORRADO MASIVO
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<EditableProduct | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
-  // ESTADOS PARA PAGINACIÓN
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10); 
+  const loadLookups = useCallback(async () => {
+    if (!tenantId) return;
+    const [{ data: cats }, { data: types }] = await Promise.all([
+      supabase.from('categories').select('id, name, parent_id').eq('tenant_id', tenantId).order('name'),
+      supabase.from('product_types').select('id, name').eq('tenant_id', tenantId).order('name'),
+    ]);
+    setCategories(cats ?? []);
+    setProductTypes(types ?? []);
+  }, [tenantId]);
 
-  useEffect(() => {
-    fetchProducts();
-    fetchReviews();
-    fetchChats(); 
-  }, []);
-
-  // Si el usuario busca algo o filtra por categoría, lo devolvemos a la página 1
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedCategory]);
-
-  async function fetchProducts() {
+  const loadProducts = useCallback(async () => {
+    if (!tenantId) return;
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
-      .select('*, categories:category_id(name)')
-      .order('id', { ascending: false });
-      
-    if (!error && data) setProducts(data);
+      .select('id, name, price, sale_price, is_on_sale, stock, sku, is_active, is_featured, description, category_id, product_type_id, attributes, categories(name), product_media(url, position), product_variants(id)', {
+        count: 'exact',
+      })
+      .eq('tenant_id', tenantId)
+      .order('name')
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+
+    if (search.trim()) query = query.ilike('name', `%${search.trim()}%`);
+    if (categoryFilter) query = query.eq('category_id', categoryFilter);
+    if (onlyFeatured) query = query.eq('is_featured', true);
+
+    const { data, count } = await query;
+    setProducts((data as any) ?? []);
+    setTotalCount(count ?? 0);
     setLoading(false);
-  }
+  }, [tenantId, page, search, categoryFilter, onlyFeatured]);
 
-  async function fetchReviews() {
-    const { data, error } = await supabase
-      .from('product_reviews')
-      .select(`
-        *,
-        products (
-          name,
-          image_url
-        )
-      `)
-      .order('created_at', { ascending: false });
-      
-    if (!error && data) setReviews(data);
-  }
+  useEffect(() => {
+    loadLookups();
+  }, [loadLookups]);
 
-  async function fetchChats() {
-    const { data, error } = await supabase
-      .from('support_chats')
-      .select('*')
-      .order('created_at', { ascending: false });
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
-    if (!error && data) {
-      setChats(data);
-    } else if (error) {
-      console.error('Error al obtener chats reales:', error.message);
+  const openCreate = () => {
+    setEditing(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (p: ProductRow) => {
+    setEditing({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      price: p.price,
+      sale_price: p.sale_price,
+      is_on_sale: p.is_on_sale,
+      stock: p.stock,
+      sku: p.sku,
+      category_id: p.category_id,
+      product_type_id: p.product_type_id,
+      attributes: p.attributes ?? {},
+      is_active: p.is_active,
+      is_featured: p.is_featured,
+    });
+    setModalOpen(true);
+  };
+
+  const handleSaved = () => {
+    setModalOpen(false);
+    setEditing(null);
+    loadProducts();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return;
+    setDeletingId(id);
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    setDeletingId(null);
+    if (error) {
+      alert('No se pudo eliminar: ' + error.message);
+      return;
     }
-  }
-
-  const handleSuccess = () => {
-    setTimeout(fetchProducts, 500);
+    loadProducts();
   };
 
-  const handleApplyBulkPromos = async (promoData: any) => {
-    try {
-      // AQUÍ VA TU LLAMADA A LA API (fetch o axios a tu backend)
-      // console.log("Datos a enviar:", promoData);
-      
-      // Simulación
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Una vez éxito, limpias selección, cierras modal y recargas datos
-      // setSelectedProducts([]);
-      // fetchProducts(); 
-      alert('¡Promociones actualizadas con éxito!');
-    } catch (error) {
-      console.error("Error aplicando promos masivas:", error);
-      alert('Hubo un error al aplicar las ofertas.');
-    }
-  };
-  
-  const openModal = (product: any = null) => {
-    setEditingProduct(product);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (product: any) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar "${product.name}"?`)) return;
-
-    try {
-      if (product.image_url) {
-        const urlParts = product.image_url.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        if (fileName) await supabase.storage.from('products').remove([fileName]);
-      }
-      const { error } = await supabase.from('products').delete().eq('id', product.id);
-      
-      if (!error) {
-        setSelectedProducts(prev => prev.filter(id => id !== product.id));
-        fetchProducts();
-      }
-    } catch (error) {
-      console.error('Error al eliminar:', error);
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar ${selectedProducts.length} productos seleccionados? Esta acción no se puede deshacer.`)) return;
-
-    try {
-      const productsToDelete = products.filter(p => selectedProducts.includes(p.id));
-      const fileNamesToRemove = productsToDelete
-        .map(p => {
-          if (p.image_url) {
-            const urlParts = p.image_url.split('/');
-            return urlParts[urlParts.length - 1];
-          }
-          return null;
-        })
-        .filter(Boolean) as string[];
-
-      if (fileNamesToRemove.length > 0) {
-        await supabase.storage.from('products').remove(fileNamesToRemove);
-      }
-
-      const { error } = await supabase.from('products').delete().in('id', selectedProducts);
-      
-      if (!error) {
-        setSelectedProducts([]); 
-        fetchProducts(); 
-      }
-    } catch (error) {
-      console.error('Error al eliminar masivamente:', error);
-    }
-  };
-
-  const toggleProductSelection = (productId: any) => {
-    setSelectedProducts(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
-  };
-
-  const handleLogout = () => {
-    document.cookie = "admin_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-    router.push('/admin/login');
-  };
-
-  const uniqueCategories = Array.from(new Set(products.map(p => p.categories?.name).filter(Boolean)));
-
-  // 1. PRIMERO FILTRAMOS
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === '' || product.categories?.name === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  // 2. LUEGO PAGINAMOS LOS RESULTADOS FILTRADOS
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
-
-  // Seleccionar solo los productos visibles en la página actual
-  const toggleSelectAll = () => {
-    const currentVisibleIds = paginatedProducts.map(p => p.id);
-    const areAllVisibleSelected = currentVisibleIds.every(id => selectedProducts.includes(id));
-
-    if (areAllVisibleSelected && currentVisibleIds.length > 0) {
-      setSelectedProducts(prev => prev.filter(id => !currentVisibleIds.includes(id)));
-    } else {
-      const newSelections = currentVisibleIds.filter(id => !selectedProducts.includes(id));
-      setSelectedProducts(prev => [...prev, ...newSelections]);
-    }
-  };
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 w-full">
-      
-      {/* HEADER DEL DASHBOARD */}
-      <div className="flex flex-wrap items-center justify-between gap-4 md:gap-8 mb-10 pb-6 border-b border-b-zinc-200">
+    <div className="space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight">Panel de Control</h1>
-          <p className="text-zinc-500 text-sm font-medium">Gestiona el inventario oficial de Cirelia Store</p>
+          <h1 className="text-3xl font-black text-ink-950 tracking-tight">Panel de Control</h1>
+          <p className="text-ink-500">Gestiona el inventario · {totalCount} {totalCount === 1 ? 'producto' : 'productos'}</p>
         </div>
-        
         <div className="flex flex-wrap items-center gap-2">
-          <button 
-            onClick={() => setActiveModal('chats')}
-            className="flex-1 sm:flex-none px-4 h-12 rounded-xl font-bold flex items-center justify-center gap-2 border bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 transition-all text-sm shadow-sm"
+          <Link
+            href="/admin/mensajes"
+            className="flex items-center gap-2 bg-white border border-ink-200 text-ink-600 h-11 px-4 rounded-xl font-bold text-sm hover:border-gold-400 hover:text-ink-900 transition-colors"
           >
             <MessageSquare size={16} /> Chats
-          </button>
-
-          <button 
-            onClick={() => setActiveModal('feedback')}
-            className="flex-1 sm:flex-none px-4 h-12 rounded-xl font-bold flex items-center justify-center gap-2 border bg-white border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 transition-all text-sm shadow-sm"
+          </Link>
+          <button
+            onClick={() => setFeedbackOpen(true)}
+            className="flex items-center gap-2 bg-white border border-ink-200 text-ink-600 h-11 px-4 rounded-xl font-bold text-sm hover:border-gold-400 hover:text-ink-900 transition-colors"
           >
-            <Star size={16} /> Feedback
+            <ThumbsUp size={16} /> Feedback
           </button>
-
-          <div className="h-10 w-px bg-zinc-200 mx-1 hidden sm:block"></div>
-
-          <button 
-            onClick={() => setIsFeaturedModalOpen(true)}
-            className="flex-1 sm:flex-none bg-amber-500 text-white px-5 h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-amber-600 transition-all active:scale-95 text-sm shadow-md"
+          <button
+            onClick={() => {
+              setPage(0);
+              setOnlyFeatured((v) => !v);
+            }}
+            className={`flex items-center gap-2 h-11 px-4 rounded-xl font-bold text-sm transition-colors ${
+              onlyFeatured ? 'bg-gold-600 text-cream-50' : 'bg-white border border-ink-200 text-ink-600 hover:border-gold-400 hover:text-ink-900'
+            }`}
           >
-            <Star size={18} /> Destacados
+            <Star size={16} className={onlyFeatured ? 'fill-cream-50' : ''} /> Destacados
           </button>
-          
-          <button 
-            onClick={() => openModal()}
-            className="flex-1 sm:flex-none bg-zinc-950 text-white px-5 h-12 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-sky-600 transition-all active:scale-95 text-sm shadow-md"
+          <button
+            onClick={openCreate}
+            className="flex items-center justify-center gap-2 bg-ink-950 text-cream-50 h-11 px-6 rounded-xl font-bold hover:bg-gold-600 transition-colors"
           >
             <Plus size={18} /> Añadir Producto
           </button>
         </div>
       </div>
 
-      {/* BARRA DE BÚSQUEDA, FILTROS Y ACCIONES MASIVAS */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-          
-          <div className="relative w-full sm:w-80">
-            <input
-              type="text"
-              placeholder="Buscar producto por nombre..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 pl-4 pr-10 bg-white border border-zinc-200 rounded-xl text-sm font-medium text-zinc-950 placeholder-zinc-400 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-600 transition-all shadow-sm"
-            />
-            {searchTerm && (
-              <button 
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 hover:text-zinc-950"
-              >
-                Borrar
-              </button>
-            )}
-          </div>
-
-          <div className="relative w-full sm:w-64">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none">
-              <Filter size={16} />
-            </div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 bg-white border border-zinc-200 rounded-xl text-sm font-medium text-zinc-950 focus:outline-none focus:border-sky-600 focus:ring-1 focus:ring-sky-600 transition-all shadow-sm appearance-none cursor-pointer"
-            >
-              <option value="">Todas las categorías</option>
-              {uniqueCategories.map((category: any, idx) => (
-                <option key={idx} value={category}>{category}</option>
-              ))}
-            </select>
-          </div>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-400" />
+          <input
+            value={search}
+            onChange={(e) => {
+              setPage(0);
+              setSearch(e.target.value);
+            }}
+            placeholder="Buscar producto por nombre..."
+            className="w-full h-11 pl-11 pr-4 bg-white border border-ink-200 rounded-xl text-sm focus:outline-none focus:border-gold-500"
+          />
         </div>
-
-        {selectedProducts.length > 0 && (
-          <button
-            onClick={handleBulkDelete}
-            className="w-full sm:w-auto px-5 h-12 bg-red-50 text-red-600 border border-red-200 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-600 hover:text-white transition-all shadow-sm animate-in fade-in"
-          >
-            <Trash2 size={18} /> 
-            Borrar Seleccionados ({selectedProducts.length})
-          </button>
-        )}
+        <select
+          value={categoryFilter}
+          onChange={(e) => {
+            setPage(0);
+            setCategoryFilter(e.target.value);
+          }}
+          className="h-11 px-4 bg-white border border-ink-200 rounded-xl text-sm focus:outline-none focus:border-gold-500"
+        >
+          <option value="">Todas las categorías</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
       </div>
 
-      {/* ========================================================================= */}
-      {/* AJUSTE 1: BARRA DE OFERTAS MASIVAS (Mírala aquí abajo de los filtros)     */}
-      {/* ========================================================================= */}
-      {selectedProducts.length > 0 && (
-        <div className="mb-6 p-4 bg-sky-50 border border-sky-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-3">
-            <div className="bg-sky-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm">
-              {selectedProducts.length}
-            </div>
-            <span className="font-bold text-sky-950 text-sm">Productos seleccionados para edición masiva</span>
-          </div>
-          
-          <button 
-            onClick={() => setIsBulkPromoOpen(true)}
-            className="flex items-center justify-center gap-2 px-5 h-11 bg-sky-600 text-white rounded-xl font-bold text-sm hover:bg-sky-700 transition-colors shadow-md active:scale-95"
-          >
-            <Tag size={16} />
-            Gestionar Ofertas Masivas
+      {onlyFeatured && (
+        <div className="flex items-center gap-2 bg-gold-50 border border-gold-200 text-gold-800 text-xs font-bold px-4 py-2.5 rounded-xl w-fit">
+          <Star size={13} className="fill-gold-600 text-gold-600" /> Mostrando solo productos destacados
+          <button onClick={() => setOnlyFeatured(false)} className="ml-1 hover:text-gold-950">
+            <X size={13} />
           </button>
         </div>
-      )} 
+      )}
 
-      {/* TABLA PRINCIPAL */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center h-64 text-zinc-400 gap-3">
-          <Loader2 size={32} className="animate-spin text-zinc-950" />
+        <div className="bg-white rounded-2xl border border-ink-100 flex items-center justify-center py-20">
+          <Loader2 size={24} className="animate-spin text-ink-400" />
+        </div>
+      ) : products.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-ink-100 flex flex-col items-center justify-center py-20 text-center px-4">
+          <PackageX size={40} className="text-ink-300 mb-4" />
+          <p className="text-ink-500 font-medium">No hay productos que coincidan.</p>
         </div>
       ) : (
         <>
-          <div className="bg-white border border-zinc-100 rounded-3xl shadow-sm overflow-hidden">
+          {/* Tarjetas — móvil / tablet angosto */}
+          <div className="grid sm:hidden gap-3">
+            {products.map((p) => {
+              const cover = [...(p.product_media ?? [])].sort((a, b) => a.position - b.position)[0]?.url;
+              const variantCount = p.product_variants?.length ?? 0;
+              return (
+                <div key={p.id} className="bg-white rounded-2xl border border-ink-100 p-4 flex gap-3">
+                  <div className="w-16 h-16 rounded-xl bg-cream-100 border border-ink-100 overflow-hidden shrink-0 relative">
+                    {cover ? (
+                      <Image src={cover} alt={p.name} fill className="object-cover" sizes="64px" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-ink-300 font-serif text-lg">{p.name.charAt(0)}</div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-ink-900 text-sm truncate flex items-center gap-1.5">
+                        {p.name}
+                        {p.is_featured && <Star size={12} className="text-gold-500 fill-gold-500 shrink-0" />}
+                      </p>
+                      <span className={`shrink-0 text-[9px] font-black px-2 py-0.5 rounded-full ${p.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-ink-100 text-ink-500'}`}>
+                        {p.is_active ? 'ACTIVO' : 'INACTIVO'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-500">{p.categories?.name ?? 'Sin categoría'}</p>
+                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs">
+                      {p.is_on_sale && p.sale_price ? (
+                        <span>
+                          <span className="font-bold text-gold-700">{money(p.sale_price)}</span>{' '}
+                          <span className="text-ink-400 line-through">{money(p.price)}</span>
+                        </span>
+                      ) : (
+                        <span className="font-bold text-ink-900">{money(p.price)}</span>
+                      )}
+                      <span className={`font-semibold ${p.stock === 0 ? 'text-red-500' : p.stock <= 5 ? 'text-amber-600' : 'text-ink-600'}`}>
+                        Stock: {p.stock}
+                      </span>
+                      <span className="flex items-center gap-1 text-ink-400">
+                        <Layers size={11} /> {variantCount > 0 ? `${variantCount} variantes` : 'Sin variantes'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button onClick={() => openEdit(p)} className="flex items-center gap-1 text-xs font-bold text-ink-600 bg-ink-50 px-3 py-1.5 rounded-lg">
+                        <Edit3 size={12} /> Editar
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p.id)}
+                        disabled={deletingId === p.id}
+                        className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg"
+                      >
+                        {deletingId === p.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Eliminar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Tabla — sm+ */}
+          <div className="hidden sm:block bg-white rounded-2xl border border-ink-100 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse max-[927px]:table-fixed">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-zinc-50 border-b border-zinc-100 text-zinc-400 text-[11px] font-black uppercase tracking-widest">
-                    <th className="py-4 pl-6 pr-2 w-12 text-center">
-                      <input 
-                        type="checkbox"
-                        aria-label="Seleccionar todos los productos de esta página"
-                        checked={paginatedProducts.length > 0 && paginatedProducts.every(p => selectedProducts.includes(p.id))}
-                        onChange={toggleSelectAll}
-                        className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 cursor-pointer accent-zinc-900"
-                      />
-                    </th>
-                    <th className="py-4 px-6">Producto</th>
-                    <th className="py-4 px-6 max-[1175px]:hidden">Categoría</th>
-                    <th className="py-4 px-6 max-[1055px]:hidden">Variantes</th>
-                    <th className="py-4 px-6 max-[935px]:hidden">Precio</th>
-                    <th className="py-4 px-6 max-[927px]:hidden">Stock</th>
-                    <th className="py-4 px-6 text-right hidden min-[928px]:table-cell whitespace-nowrap">Acciones</th>
+                  <tr className="border-b border-ink-100 text-left text-[10px] font-black text-ink-400 uppercase tracking-widest">
+                    <th className="px-5 py-4">Producto</th>
+                    <th className="px-5 py-4">Categoría</th>
+                    <th className="px-5 py-4">Variantes</th>
+                    <th className="px-5 py-4">Precio</th>
+                    <th className="px-5 py-4">Stock</th>
+                    <th className="px-5 py-4">Estado</th>
+                    <th className="px-5 py-4">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100 text-sm font-medium">
-                  {paginatedProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-zinc-50/50 transition-all">
-                      <td className="py-4 pl-6 pr-2 w-12 text-center">
-                        <input 
-                          type="checkbox"
-                          aria-label={`Seleccionar producto ${product.name}`}
-                          checked={selectedProducts.includes(product.id)}
-                          onChange={() => toggleProductSelection(product.id)}
-                          className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900 cursor-pointer accent-zinc-900"
-                        />
-                      </td>
-
-                      <td className="py-4 px-6 max-[927px]:px-4">
-                        <div className="flex flex-col min-[928px]:flex-row items-start min-[928px]:items-center gap-4 w-full min-w-0">
-                          <div className="flex items-center gap-4 w-full min-w-0">
-                            <div className="relative w-12 h-12 rounded-xl bg-zinc-100 border border-zinc-200 overflow-hidden shrink-0 flex items-center justify-center text-zinc-400">
-                              {product.image_url ? <img src={product.image_url} className="w-full h-full object-cover" /> : <ImageIcon size={18} />}
-                              
-                              {product.is_express && (
-                                <div className="absolute top-1 right-1 bg-amber-400 text-white p-0.5 rounded-full border border-white shadow-sm">
-                                  <Zap size={10} fill="currentColor" strokeWidth={3} />
+                <tbody>
+                  {products.map((p) => {
+                    const cover = [...(p.product_media ?? [])].sort((a, b) => a.position - b.position)[0]?.url;
+                    const variantCount = p.product_variants?.length ?? 0;
+                    return (
+                      <tr key={p.id} className="border-b border-ink-50 last:border-0 hover:bg-cream-50 transition-colors">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-11 h-11 rounded-lg bg-cream-100 border border-ink-100 overflow-hidden shrink-0 relative">
+                              {cover ? (
+                                <Image src={cover} alt={p.name} fill className="object-cover" sizes="44px" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-ink-300 font-serif text-sm">
+                                  {p.name.charAt(0)}
                                 </div>
                               )}
                             </div>
-                            
-                            <div className="min-w-0 flex-1">
-                              <p className="font-bold text-zinc-950 truncate">{product.name}</p>
-                              <div 
-                                className="text-xs text-zinc-400 line-clamp-1 max-w-xs prose prose-sm **:inline **:m-0"
-                                dangerouslySetInnerHTML={{ __html: product.description }} 
-                              />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-ink-900 truncate flex items-center gap-1.5">
+                                {p.name}
+                                {p.is_featured && <Star size={12} className="text-gold-500 fill-gold-500 shrink-0" />}
+                              </p>
+                              {p.sku && <p className="text-xs text-ink-400">{p.sku}</p>}
                             </div>
                           </div>
-                          
-                          <div className="flex min-[928px]:hidden gap-2 w-full mt-2">
-                            <button onClick={() => { setProductToEditSpecs(product); setIsSpecsModalOpen(true); }} className="p-2 text-zinc-600 bg-zinc-100 rounded-lg flex-1 flex justify-center"><Settings2 size={16} /></button>
-                            <button onClick={() => openModal(product)} className="p-2 text-zinc-600 bg-zinc-100 rounded-lg flex-1 flex justify-center"><Edit3 size={16} /></button>
-                            <button onClick={() => handleDelete(product)} className="p-2 text-red-500 bg-red-50 rounded-lg flex-1 flex justify-center"><Trash2 size={16} /></button>
-                          </div>
-                        </div>
-                      </td>
-                      
-                      <td className="py-4 px-6 text-zinc-500 capitalize max-[1175px]:hidden">
-                        {product.categories?.name || '-'}
-                      </td>
-
-                      <td className="py-4 px-6 max-[1055px]:hidden">
-                        <div className="flex flex-col gap-2">
-                          {product.colors && product.colors.length > 0 ? (
-                            <div className="flex items-center gap-1.5">
-                              {[...product.colors].sort((a, b) => a.localeCompare(b)).map((colorName: string) => {
-                                const cleanKey = colorName.trim().toLowerCase();
-                                const hexColor = COLOR_MAP[cleanKey] || '#D1D5DB'; 
-                                return <div key={colorName} title={colorName} className="w-4 h-4 rounded-full border border-zinc-300 shadow-sm shrink-0" style={{ backgroundColor: hexColor }} />;
-                              })}
-                            </div>
-                          ) : null}
-                          {product.sizes && product.sizes.length > 0 ? (
-                            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">{product.sizes.join(', ')}</div>
+                        </td>
+                        <td className="px-5 py-4 text-ink-600">{p.categories?.name ?? '—'}</td>
+                        <td className="px-5 py-4">
+                          {variantCount > 0 ? (
+                            <button
+                              onClick={() => openEdit(p)}
+                              className="flex items-center gap-1 text-xs font-bold text-gold-700 hover:text-gold-800"
+                            >
+                              <Layers size={12} /> {variantCount}
+                            </button>
                           ) : (
-                            (!product.colors || product.colors.length === 0) && <span className="text-zinc-300 text-xs italic">Sin variantes</span>
+                            <span className="text-ink-300 text-xs italic">Sin variantes</span>
                           )}
-                        </div>
-                      </td>
-
-                      <td className="py-4 px-6 max-[935px]:hidden">
-                        {product.is_promo ? (
-                          <div className="flex flex-col">
-                            <span className="text-zinc-400 line-through font-normal text-xs">₡{product.price?.toLocaleString()}</span>
-                            <span className="text-green-600 font-bold">₡{product.promo_price?.toLocaleString()}</span>
+                        </td>
+                        <td className="px-5 py-4">
+                          {p.is_on_sale && p.sale_price ? (
+                            <div>
+                              <span className="font-bold text-gold-700">{money(p.sale_price)}</span>{' '}
+                              <span className="text-ink-400 line-through text-xs">{money(p.price)}</span>
+                            </div>
+                          ) : (
+                            <span className="font-semibold text-ink-900">{money(p.price)}</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`font-semibold ${p.stock === 0 ? 'text-red-500' : p.stock <= 5 ? 'text-amber-600' : 'text-ink-700'}`}>
+                            {p.stock}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${p.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-ink-100 text-ink-500'}`}>
+                            {p.is_active ? 'ACTIVO' : 'INACTIVO'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-1 justify-end">
+                            <button onClick={() => openEdit(p)} className="p-2 text-ink-500 hover:bg-ink-100 rounded-lg transition-colors">
+                              <Edit3 size={15} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(p.id)}
+                              disabled={deletingId === p.id}
+                              className="p-2 text-ink-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                            >
+                              {deletingId === p.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
+                            </button>
                           </div>
-                        ) : (
-                          <span className="font-bold text-zinc-950">₡{product.price?.toLocaleString()}</span>
-                        )}
-                      </td>
-                      
-                      <td className="py-4 px-6 max-[927px]:hidden">
-                        <span className={`px-2.5 py-1 rounded-md text-xs font-black ${product.stock > 5 ? 'bg-zinc-100 text-zinc-700' : 'bg-red-50 text-red-600'}`}>
-                          {product.stock} unids
-                        </span>
-                      </td>
-                      
-                      <td className="py-4 pr-6 pl-2 text-right hidden min-[928px]:table-cell whitespace-nowrap w-[1%]">
-                        <div className="flex justify-end gap-1 shrink-0">
-                          <button onClick={() => { setProductToEditSpecs(product); setIsSpecsModalOpen(true); }} className="p-1.5 text-zinc-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-all" title="Editar especificaciones"><Settings2 size={15} /></button>
-                          <button onClick={() => openModal(product)} className="p-1.5 text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition-all"><Edit3 size={15} /></button>
-                          <button onClick={() => handleDelete(product)} className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 size={15} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  
-                  {paginatedProducts.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="py-10 text-center text-zinc-400">
-                        No se encontraron productos con estos filtros.
-                      </td>
-                    </tr>
-                  )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
-
-          {/* SECCIÓN DE PAGINACIÓN */}
-          {filteredProducts.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 bg-white border border-zinc-100 rounded-2xl shadow-sm">
-              <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-zinc-500 w-full sm:w-auto text-center sm:text-left">
-                <span>
-                  Mostrando del <span className="font-bold text-zinc-950">{startIndex + 1}</span> al <span className="font-bold text-zinc-950">{Math.min(startIndex + itemsPerPage, filteredProducts.length)}</span> de <span className="font-bold text-zinc-950">{filteredProducts.length}</span> resultados
-                </span>
-                
-                <div className="h-4 w-px bg-zinc-200 hidden sm:block"></div>
-                
-                <div className="flex items-center justify-center gap-2">
-                  <span className="font-medium">Filas por página:</span>
-                  <select 
-                    aria-label="Cantidad de filas por página"
-                    value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1); 
-                    }}
-                    className="bg-zinc-50 border border-zinc-200 text-zinc-950 font-bold text-sm rounded-lg focus:outline-none focus:border-zinc-400 block p-1.5 cursor-pointer hover:bg-zinc-100 transition-colors"
-                  >
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                
-                <div className="flex items-center px-1 gap-1 overflow-x-auto max-w-37.5 sm:max-w-none scrollbar-hide">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 rounded-lg text-sm font-bold transition-all shrink-0 ${
-                        currentPage === page 
-                          ? 'bg-zinc-950 text-white shadow-md' 
-                          : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900'
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            </div>
-          )}
         </>
       )}
 
-      {/* MODAL PARA AÑADIR/EDITAR PRODUCTO */}
-      {isModalOpen && (
-        <ProductModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          onSuccess={handleSuccess} 
-          productToEdit={editingProduct} 
-        />
-      )}
-      
-      {/* MODAL PARA ESPECIFICACIONES */}
-      {isSpecsModalOpen && (
-        <SpecManagerModal 
-          productId={productToEditSpecs?.id} 
-          currentSpecs={productToEditSpecs?.specifications} 
-          onClose={() => setIsSpecsModalOpen(false)} 
-          onSave={() => {
-            setIsSpecsModalOpen(false);
-            fetchProducts(); 
-          }}
-        />
-      )}
-      
-      {/* MODAL PARA GESTIÓN DE DESTACADOS */}
-      {isFeaturedModalOpen && (
-        <ProductFeaturedModal 
-          isOpen={isFeaturedModalOpen} 
-          onClose={() => setIsFeaturedModalOpen(false)} 
-          // Mapeamos los productos para "aplanar" el nombre de la categoría y que el modal la entienda
-          products={products.map(p => ({
-            ...p,
-            category: p.categories?.name || 'Sin Categoría'
-          }))} 
-          onUpdate={fetchProducts}
-        />
-      )}
-
-      {/* MODAL EMERGENTE GENERAL */}
-      {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-zinc-950/40 backdrop-blur-sm transition-opacity" 
-            onClick={() => setActiveModal(null)} 
-          />
-          
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-zinc-100 flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center px-6 py-5 border-b border-zinc-100">
-              <h2 className="text-sm font-black text-zinc-950 uppercase tracking-widest">
-                {activeModal === 'chats' ? 'Historial de Interacciones' : 'Comentarios de Productos'}
-              </h2>
-              <button 
-                onClick={() => setActiveModal(null)} 
-                className="p-2 hover:bg-zinc-100 rounded-full transition-colors text-zinc-400 hover:text-zinc-900"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="p-6 overflow-y-auto bg-zinc-50/50 rounded-b-3xl">
-              {activeModal === 'chats' ? (
-                <ChatHistoryView chats={chats} />
-              ) : (
-                <ProductFeedbackView feedbacks={reviews} />
-              )}
-            </div>
-          </div>
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={page === 0}
+            className="p-2 border border-ink-200 rounded-lg disabled:opacity-40 hover:bg-ink-50 transition-colors"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-sm text-ink-500 font-medium">Página {page + 1} de {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={page >= totalPages - 1}
+            className="p-2 border border-ink-200 rounded-lg disabled:opacity-40 hover:bg-ink-50 transition-colors"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* AJUSTE 2: TU MODAL MASIVO NUEVO (Inyectado al puro final)                 */}
-      {/* ========================================================================= */}
-      <BulkPromoModal 
-        isOpen={isBulkPromoOpen}
-        onClose={() => setIsBulkPromoOpen(false)}
-        selectedProducts={products.filter(p => selectedProducts.includes(p.id))}
-        onApply={handleApplyBulkPromos}
-      />
+      {modalOpen && tenantId && (
+        <ProductFormModal
+          tenantId={tenantId}
+          categories={categories}
+          productTypes={productTypes}
+          initial={editing}
+          onClose={() => {
+            setModalOpen(false);
+            setEditing(null);
+          }}
+          onSaved={handleSaved}
+        />
+      )}
 
+      {feedbackOpen && tenantId && <FeedbackPanel tenantId={tenantId} onClose={() => setFeedbackOpen(false)} />}
     </div>
   );
 }

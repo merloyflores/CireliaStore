@@ -5,8 +5,8 @@ interface Product {
   id: string;
   name: string;
   price: number;
-  image_url: string;
-  category: string;
+  image_url?: string | null;
+  currency?: string;
 }
 
 interface CartStore {
@@ -15,6 +15,7 @@ interface CartStore {
   addToCart: (product: Product) => void;
   toggleFavorite: (product: Product) => void;
   removeFromCart: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
 }
 
@@ -44,6 +45,13 @@ export const useCartStore = create<CartStore>()(
       }),
       removeFromCart: (productId) => set((state) => ({
         cart: state.cart.filter((item) => item.id !== productId)
+      })),
+      updateQuantity: (productId, quantity) => set((state) => ({
+        cart: quantity <= 0
+          ? state.cart.filter((item) => item.id !== productId)
+          : state.cart.map((item) =>
+              item.id === productId ? { ...item, quantity } : item
+            ),
       })),
       clearCart: () => set({ cart: [] }),
     }),

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { Plus, Trash2, Tag, Loader2 } from 'lucide-react';
 
 export default function CategoryManager() {
+  const supabase = createClient();
   const [categories, setCategories] = useState<any[]>([]);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);

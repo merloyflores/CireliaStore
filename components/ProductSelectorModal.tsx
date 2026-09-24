@@ -1,6 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Search, X, Check, Loader2, Filter, ImageIcon, Plus, Minus } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 interface Product {
   id: string;
@@ -22,6 +24,7 @@ interface ProductSelectorModalProps {
 }
 
 export default function ProductSelectorModal({ isOpen, onClose, onAddProducts }: ProductSelectorModalProps) {
+  const supabase = createClient();
   // Estados de carga e inventario
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);

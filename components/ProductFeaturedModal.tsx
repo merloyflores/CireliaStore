@@ -1,6 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { X, Check, Search, Star, Filter } from 'lucide-react';
 
 interface Product {
@@ -19,6 +19,7 @@ interface Props {
 }
 
 export default function ProductFeaturedModal({ isOpen, onClose, products, onUpdate }: Props) {
+  const supabase = createClient();
   const [selectedIds, setSelectedIds] = useState<string[]>(
     products.filter((p) => p.is_featured).map((p) => p.id)
   );

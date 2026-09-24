@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { Plus, X, Settings2, Trash2, Check, Tag } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
@@ -97,6 +97,7 @@ const ModalPortal = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function SpecManagerModal({ productId, currentSpecs, onClose, onSave }: any) {
+  const supabase = createClient();
   const [specs, setSpecs] = useState(currentSpecs || {});
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");

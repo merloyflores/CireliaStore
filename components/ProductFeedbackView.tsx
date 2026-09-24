@@ -1,8 +1,11 @@
+'use client';
+
 import { useState } from 'react';
 import { User, Package, Trash2, Calendar, Search } from 'lucide-react';
-import { supabase } from '@/lib/supabase'; // Asegúrate de importar tu cliente de supabase
+import { createClient } from '@/lib/supabase/client'; // Asegúrate de importar tu cliente de supabase
 
 export default function ProductFeedbackView({ feedbacks: initialFeedbacks }: { feedbacks: any[] }) {
+  const supabase = createClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [feedbacks, setFeedbacks] = useState(initialFeedbacks);
 

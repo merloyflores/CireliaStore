@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
@@ -124,6 +124,7 @@ const MenuBar = ({ editor }: { editor: any }) => {
 
 
 export default function ProductModal({ isOpen, onClose, onSuccess, productToEdit }: ProductModalProps) {
+  const supabase = createClient();
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]); 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);

@@ -1,8 +1,9 @@
 // components/RelatedProducts.tsx
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 import ProductCard from './ProductCard';
 
 export default async function RelatedProducts({ categoryId, currentProductId }: { categoryId: string, currentProductId: string }) {
+  const supabase = await createClient();
   const { data: products } = await supabase
     .from('products')
     .select('*')

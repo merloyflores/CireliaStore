@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { 
   X, 
   MessageSquare, 
@@ -56,6 +56,7 @@ interface OrderDetailModalProps {
 }
 
 export default function OrderDetailModal({ order, isOpen, onClose }: OrderDetailModalProps) {
+  const supabase = createClient();
   // ================= ESTADOS =================
   const [items, setItems] = useState<OrderItem[]>([]);
   const [noteText, setNoteText] = useState(''); 

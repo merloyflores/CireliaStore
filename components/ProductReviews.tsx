@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { Star, MessageSquare, Sparkles, Loader2, Award, Zap, User } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 
@@ -15,6 +15,7 @@ interface Review {
 }
 
 export default function ProductReviews({ productId }: { productId: string }) {
+  const supabase = createClient();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null); // Estado para detectar sesión

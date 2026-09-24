@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 import { X, Tag, Loader2 } from 'lucide-react';
 
 interface CategoryModalProps {
@@ -11,6 +11,7 @@ interface CategoryModalProps {
 }
 
 export default function CategoryModal({ isOpen, onClose, onSuccess }: CategoryModalProps) {
+  const supabase = createClient();
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
 

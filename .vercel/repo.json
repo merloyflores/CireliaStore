@@ -1,0 +1,11 @@
+{
+  "remoteName": "origin",
+  "projects": [
+    {
+      "id": "prj_bpl41VH4To6EQB0TTzaFxyeOrUnj",
+      "name": "cirelia-store",
+      "directory": ".",
+      "orgId": "team_JEQJJZl63nhAlVeNVIqsYo4U"
+    }
+  ]
+}

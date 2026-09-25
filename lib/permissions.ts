@@ -1,19 +1,18 @@
 /**
- * Permisos "de referencia" para roles personalizados de Equipo. No
- * reemplazan el rol base (admin/moderator/delivery), que es lo que
- * sigue mandando en la base de datos (RLS: is_staff() = admin o
- * moderator puede tocar todo lo de su tienda). Esto es una capa
- * ADICIONAL, a nivel de interfaz: cuando alguien tiene un rol
- * personalizado asignado (role_id), su menú del admin solo muestra
- * las secciones para las que ese rol tiene permiso — así un "Vendedor
- * de piso" no ve ni le aparece Configuración o Comisiones, aunque
- * técnicamente siga siendo "moderador" por dentro.
+ * Permisos para roles personalizados de Equipo — y desde la migración
+ * 33_role_permissions_real_rls, ya no son solo de interfaz: las mismas
+ * claves (manage_content, manage_products, etc.) están replicadas en
+ * políticas RLS de Supabase vía la función has_permission(key), así
+ * que alguien con un rol limitado tampoco puede escribir esas tablas
+ * entrando directo por la API/URL, no solo que no le aparezcan en el
+ * menú.
  *
- * Si en algún momento se necesita que esto sea una restricción de
- * seguridad real (no solo de interfaz) — es decir, que ni siquiera
- * pueda entrar tecleando la URL — hay que llevar estos mismos permisos
- * a políticas RLS en Supabase. Por ahora es control de qué se VE y se
- * ofrece en el panel, que es lo que pidió el dueño de la tienda.
+ * - Sin rol personalizado asignado (role_id null): acceso completo,
+ *   tanto acá (canAccess) como en la base (has_permission) — así
+ *   siguen funcionando los admins/moderadores de siempre.
+ * - Con rol personalizado: solo lo que ese rol tenga marcado, en
+ *   ambos lados. Si agregás una clave nueva acá, replicala también en
+ *   la política RLS de la tabla correspondiente (ver esa migración).
  */
 export const PERMISSION_KEYS = [
   { key: 'manage_content', label: 'Diseño (tema, hero y piezas del home)' },

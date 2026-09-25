@@ -106,10 +106,20 @@ export function buildGoldOverrideCss(baseHex: string): string {
  * <style> en <head>, que dependía de ese orden.
  */
 export function buildGoldOverrideStyle(baseHex: string): Record<string, string> {
+  return buildPaletteOverrideStyle('gold', baseHex);
+}
+
+/**
+ * Versión genérica de buildGoldOverrideStyle: sirve para pisar
+ * cualquier rampa de color declarada en globals.css (gold, secondary,
+ * cream, ink...), no solo el dorado. `prefix` es el nombre que sigue a
+ * "--color-" en el @theme (p. ej. "secondary" para --color-secondary-*).
+ */
+export function buildPaletteOverrideStyle(prefix: string, baseHex: string): Record<string, string> {
   const shades = generateShades(baseHex);
   const style: Record<string, string> = {};
   (Object.keys(shades) as unknown as (keyof Shades)[]).forEach((step) => {
-    style[`--color-gold-${step}`] = shades[step];
+    style[`--color-${prefix}-${step}`] = shades[step];
   });
   return style;
 }

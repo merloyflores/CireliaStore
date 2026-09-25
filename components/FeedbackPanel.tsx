@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { X, Loader2, Star, MessageSquareOff } from 'lucide-react';
+import { X, Loader2, Star, MessageSquareOff, Trash2, Search } from 'lucide-react';
 
 type Review = {
   id: string;
@@ -21,6 +21,8 @@ export default function FeedbackPanel({ tenantId, onClose }: { tenantId: string;
   const supabase = createClient();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     async function load() {
@@ -37,7 +39,33 @@ export default function FeedbackPanel({ tenantId, onClose }: { tenantId: string;
     load();
   }, [tenantId]);
 
+  // Borrar una reseña: antes este panel era de solo lectura — ahora se
+  // puede moderar (quitar comentarios inapropiados o de spam) sin salir
+  // del panel. El RLS ya permitía esto ("product_reviews: staff
+  // modera"), solo faltaba la interfaz.
+  const deleteReview = async (id: string) => {
+    if (!confirm('¿Eliminar esta reseña? No se puede deshacer.')) return;
+    setDeletingId(id);
+    const { error } = await supabase.from('product_reviews').delete().eq('id', id);
+    if (!error) {
+      setReviews((prev) => prev.filter((r) => r.id !== id));
+    } else {
+      alert('No se pudo eliminar la reseña.');
+    }
+    setDeletingId(null);
+  };
+
   const avg = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : '—';
+
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? reviews.filter(
+        (r) =>
+          (r.products?.name ?? '').toLowerCase().includes(q) ||
+          (r.user_name ?? '').toLowerCase().includes(q) ||
+          (r.comment ?? '').toLowerCase().includes(q)
+      )
+    : reviews;
 
   return (
     <div className="fixed inset-0 z-50 bg-ink-950/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -53,6 +81,18 @@ export default function FeedbackPanel({ tenantId, onClose }: { tenantId: string;
         </div>
 
         <div className="p-6">
+          {!loading && reviews.length > 0 && (
+            <div className="relative mb-4">
+              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-300" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por producto, cliente o comentario..."
+                className="w-full h-10 pl-9 pr-3 bg-cream-50 border border-ink-200 rounded-xl text-sm outline-none focus:border-gold-400"
+              />
+            </div>
+          )}
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 size={22} className="animate-spin text-ink-400" />
@@ -62,11 +102,21 @@ export default function FeedbackPanel({ tenantId, onClose }: { tenantId: string;
               <MessageSquareOff size={36} className="text-ink-300 mb-3" />
               <p className="text-ink-500 font-medium text-sm">Todavía no hay reseñas de productos.</p>
             </div>
+          ) : filtered.length === 0 ? (
+            <p className="text-sm text-ink-400 text-center py-10">Sin resultados para "{search}".</p>
           ) : (
             <div className="space-y-3">
-              {reviews.map((r) => (
-                <div key={r.id} className="bg-cream-50 border border-ink-100 rounded-2xl p-4">
-                  <div className="flex items-center justify-between gap-3 mb-1">
+              {filtered.map((r) => (
+                <div key={r.id} className="bg-cream-50 border border-ink-100 rounded-2xl p-4 relative">
+                  <button
+                    onClick={() => deleteReview(r.id)}
+                    disabled={deletingId === r.id}
+                    aria-label="Eliminar reseña"
+                    className="absolute top-3 right-3 p-1.5 rounded-lg text-ink-300 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                  >
+                    {deletingId === r.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  </button>
+                  <div className="flex items-center justify-between gap-3 mb-1 pr-7">
                     <p className="font-semibold text-ink-900 text-sm">{r.user_name || 'Cliente'}</p>
                     <div className="flex items-center gap-0.5 shrink-0">
                       {Array.from({ length: 5 }).map((_, i) => (
@@ -75,7 +125,7 @@ export default function FeedbackPanel({ tenantId, onClose }: { tenantId: string;
                     </div>
                   </div>
                   <p className="text-xs text-gold-700 font-bold mb-1">{r.products?.name ?? 'Producto eliminado'}</p>
-                  {r.comment && <p className="text-sm text-ink-600 leading-relaxed">{r.comment}</p>}
+                  {r.comment && <p className="text-sm text-ink-600 leading-relaxed pr-7">{r.comment}</p>}
                   <p className="text-[10px] text-ink-400 mt-2">{formatDate(r.created_at)}</p>
                 </div>
               ))}

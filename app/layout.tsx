@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
 import Providers from "./providers";
 import { createClient } from "@/lib/supabase/server";
-import { buildGoldOverrideStyle, isValidHex } from "@/lib/themeColors";
+import { buildPaletteOverrideStyle, isValidHex } from "@/lib/themeColors";
 
 // Inter: texto de cuerpo, UI. Fraunces: serif elegante para titulares —
 // es lo que le da el aire "boutique" de la marca (dorado/crema), en vez
@@ -30,12 +30,13 @@ export const metadata: Metadata = {
   description: "Cirelia Store — productos exclusivos, calidad excepcional.",
 };
 
-// Trae el color "Primario" configurado en /admin/configuracion y lo
-// convierte en una rampa de tonos que pisa --color-gold-* (ver
-// lib/themeColors.ts). Corre en el servidor, en cada request, así que
-// un cambio guardado en Configuración se ve de inmediato en el sitio
-// entero — no solo en un componente aislado.
-async function getGoldOverrideStyle(): Promise<Record<string, string> | undefined> {
+// Trae los 4 colores configurados en /admin/configuracion (Primario,
+// Secundario, Fondo, Texto) y convierte cada uno en su propia rampa de
+// tonos, pisando --color-gold-*, --color-secondary-*, --color-cream-*
+// y --color-ink-* (ver lib/themeColors.ts). Corre en el servidor, en
+// cada request, así que un cambio guardado en Configuración se ve de
+// inmediato en el sitio entero — no solo en un componente aislado.
+async function getPaletteOverrideStyle(): Promise<Record<string, string> | undefined> {
   try {
     const headerList = await headers();
     const tenantSlug = headerList.get("x-tenant-slug") || process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG || "cirelia";
@@ -44,23 +45,37 @@ async function getGoldOverrideStyle(): Promise<Record<string, string> | undefine
     if (!tenant) return undefined;
     const { data: theme } = await supabase
       .from("tenant_theme")
-      .select("color_primary")
+      .select("color_primary, color_secondary, color_bg, color_text")
       .eq("tenant_id", tenant.id)
       .maybeSingle();
-    if (!theme || !isValidHex(theme.color_primary)) return undefined;
-    return buildGoldOverrideStyle(theme.color_primary);
+    if (!theme) return undefined;
+
+    let style: Record<string, string> = {};
+    if (isValidHex(theme.color_primary)) {
+      style = { ...style, ...buildPaletteOverrideStyle("gold", theme.color_primary) };
+    }
+    if (isValidHex(theme.color_secondary)) {
+      style = { ...style, ...buildPaletteOverrideStyle("secondary", theme.color_secondary) };
+    }
+    if (isValidHex(theme.color_bg)) {
+      style = { ...style, ...buildPaletteOverrideStyle("cream", theme.color_bg) };
+    }
+    if (isValidHex(theme.color_text)) {
+      style = { ...style, ...buildPaletteOverrideStyle("ink", theme.color_text) };
+    }
+    return Object.keys(style).length > 0 ? style : undefined;
   } catch {
     // Si algo falla acá (tenant no resuelto, etc.) seguimos con la
-    // paleta dorada original de globals.css — nunca debe tumbar el sitio.
+    // paleta original de globals.css — nunca debe tumbar el sitio.
     return undefined;
   }
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const goldOverrideStyle = await getGoldOverrideStyle();
+  const paletteOverrideStyle = await getPaletteOverrideStyle();
 
   return (
-    <html lang="es" className="scroll-smooth" style={goldOverrideStyle as React.CSSProperties}>
+    <html lang="es" className="scroll-smooth" style={paletteOverrideStyle as React.CSSProperties}>
       <body
         className={`${inter.variable} ${fraunces.variable} font-sans antialiased min-h-dvh flex flex-col relative bg-cream-50 text-ink-900`}
       >

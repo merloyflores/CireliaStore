@@ -6,8 +6,9 @@ import Link from 'next/link';
 import { useCartStore } from '@/app/store/useCartStore';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/app/providers';
-import { ChevronLeft, Loader2, MessageCircle, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, Loader2, MessageCircle, ShoppingBag, CreditCard } from 'lucide-react';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import { useTenantSettings } from '@/lib/useTenantSettings';
 
 const TAX_RATE = 0.13;
 
@@ -21,6 +22,8 @@ export default function CheckoutPage() {
   const { user, profile } = useAuth();
   const cart = useCartStore((s) => s.cart);
   const clearCart = useCartStore((s) => s.clearCart);
+  const { settings: tenantSettings } = useTenantSettings();
+  const useOnvoPay = tenantSettings.payment_config?.provider === 'onvopay';
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -87,11 +90,10 @@ export default function CheckoutPage() {
       const { data: tenant } = await supabase.from('tenants').select('id').eq('slug', tenantSlug).maybeSingle();
       if (!tenant) throw new Error('No se pudo identificar la tienda. Recargá la página e intentá de nuevo.');
 
-      // Ahora mismo el pago se confirma manualmente (SINPE / WhatsApp) —
-      // no hay pasarela de tarjeta conectada todavía. El pedido se crea
-      // como "pending" y el equipo lo confirma al recibir el pago; así
-      // el checkout es real y funcional hoy sin depender de credenciales
-      // de un proveedor de pagos que aún no existen.
+      // El pedido se crea igual sea cual sea el método de pago (como
+      // "pending"): con ONVOPay, se marca "paid" solo automáticamente
+      // cuando la pasarela confirma el cobro (webhook); sin ONVOPay, el
+      // equipo lo confirma manualmente al recibir el pago por SINPE.
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -102,7 +104,7 @@ export default function CheckoutPage() {
           tax_amount: tax,
           tax_percentage: TAX_RATE * 100,
           total_amount: total,
-          payment_method: 'sinpe_whatsapp',
+          payment_method: useOnvoPay ? 'onvopay' : 'sinpe_whatsapp',
           shipping_address: { nombre: name, telefono: phone, correo: email, direccion: address },
           order_notes: notes || null,
         })
@@ -131,6 +133,29 @@ export default function CheckoutPage() {
           })
         )
       );
+
+      // Con ONVOPay: intentamos armar el checkout hospedado y redirigir
+      // ahí a pagar. Si algo falla (todavía no configurado, error de
+      // red, etc.) no dejamos al comprador sin poder pagar — caemos de
+      // vuelta al flujo manual de siempre, con el pedido ya guardado.
+      if (useOnvoPay && tenantSettings.tenantId) {
+        try {
+          const res = await fetch('/api/payments/onvopay/create-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: order.id, tenantId: tenantSettings.tenantId }),
+          });
+          const data = await res.json();
+          if (res.ok && data.url) {
+            clearCart();
+            window.location.href = data.url;
+            return;
+          }
+          console.error('ONVOPay create-session:', data.error);
+        } catch (err) {
+          console.error('No se pudo iniciar el pago con ONVOPay:', err);
+        }
+      }
 
       clearCart();
       router.push(`/checkout/confirmacion/${order.id}`);
@@ -226,13 +251,23 @@ export default function CheckoutPage() {
 
             <div className="bg-cream-100 rounded-3xl p-6 sm:p-8 border border-ink-100">
               <h2 className="font-serif text-lg text-ink-900 mb-2">Método de pago</h2>
-              <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-                <MessageCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-emerald-800 leading-relaxed">
-                  Al confirmar, creamos tu pedido y te abrimos WhatsApp con el resumen para coordinar el pago por
-                  SINPE Móvil. Tu pedido queda registrado ya mismo.
-                </p>
-              </div>
+              {useOnvoPay ? (
+                <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                  <CreditCard className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-emerald-800 leading-relaxed">
+                    Al confirmar, te llevamos a pagar de forma segura con tarjeta o SINPE Móvil. Tu pedido queda
+                    registrado ya mismo y se confirma automáticamente en cuanto se completa el pago.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+                  <MessageCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-emerald-800 leading-relaxed">
+                    Al confirmar, creamos tu pedido y te abrimos WhatsApp con el resumen para coordinar el pago por
+                    SINPE Móvil. Tu pedido queda registrado ya mismo.
+                  </p>
+                </div>
+              )}
             </div>
 
             {errorMsg && (
@@ -250,7 +285,15 @@ export default function CheckoutPage() {
                 </>
               ) : (
                 <>
-                  <WhatsAppIcon style={{ fontSize: 18 }} /> Confirmar pedido
+                  {useOnvoPay ? (
+                    <>
+                      <CreditCard className="w-5 h-5" /> Pagar ahora
+                    </>
+                  ) : (
+                    <>
+                      <WhatsAppIcon style={{ fontSize: 18 }} /> Confirmar pedido
+                    </>
+                  )}
                 </>
               )}
             </button>

@@ -2,8 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import type { WhatsAppConfig } from '@/lib/blockBackground';
+
+export type PaymentConfig = { provider?: 'manual' | 'onvopay' };
 
 export type TenantSettings = {
+  tenantId: string | null;
   whatsapp_number: string;
   contact_email: string;
   address: string | null;
@@ -11,9 +15,12 @@ export type TenantSettings = {
   instagram_url: string | null;
   facebook_url: string | null;
   tiktok_url: string | null;
+  whatsapp_config: WhatsAppConfig;
+  payment_config: PaymentConfig;
 };
 
 const FALLBACK: TenantSettings = {
+  tenantId: null,
   whatsapp_number: '50672961548',
   contact_email: 'info@cireliastore.com',
   address: null,
@@ -21,6 +28,8 @@ const FALLBACK: TenantSettings = {
   instagram_url: null,
   facebook_url: null,
   tiktok_url: null,
+  whatsapp_config: {},
+  payment_config: {},
 };
 
 /**
@@ -47,11 +56,12 @@ export function useTenantSettings() {
       }
       const { data } = await supabase
         .from('tenant_theme')
-        .select('whatsapp_number, contact_email, address, business_hours, instagram_url, facebook_url, tiktok_url')
+        .select('whatsapp_number, contact_email, address, business_hours, instagram_url, facebook_url, tiktok_url, whatsapp_config, payment_config')
         .eq('tenant_id', tenant.id)
         .maybeSingle();
       if (!cancelled && data) {
         setSettings({
+          tenantId: tenant.id,
           whatsapp_number: data.whatsapp_number || FALLBACK.whatsapp_number,
           contact_email: data.contact_email || FALLBACK.contact_email,
           address: data.address,
@@ -59,7 +69,11 @@ export function useTenantSettings() {
           instagram_url: data.instagram_url,
           facebook_url: data.facebook_url,
           tiktok_url: data.tiktok_url,
+          whatsapp_config: (data.whatsapp_config as WhatsAppConfig) ?? {},
+          payment_config: (data.payment_config as PaymentConfig) ?? {},
         });
+      } else if (!cancelled) {
+        setSettings((s) => ({ ...s, tenantId: tenant.id }));
       }
       if (!cancelled) setLoading(false);
     }

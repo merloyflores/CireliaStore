@@ -7,6 +7,7 @@ import { Loader2, Percent, Plus, Trash2 } from 'lucide-react';
 
 type Staff = { id: string; name: string | null; email: string | null };
 type Category = { id: string; name: string };
+type ProductOption = { id: string; name: string };
 
 type Rule = {
   id: string;
@@ -18,7 +19,11 @@ type Rule = {
   rate_type: 'percentage' | 'fixed';
   rate_value: number;
   is_active: boolean;
+  goal_threshold: number | null;
+  goal_period: string | null;
 };
+
+const GOAL_PERIOD_LABELS: Record<string, string> = { day: 'diaria', week: 'semanal', month: 'mensual' };
 
 type CommissionRow = {
   id: string;
@@ -43,6 +48,8 @@ const BLANK_RULE = {
   category_id: null as string | null,
   rate_type: 'percentage' as Rule['rate_type'],
   rate_value: 0,
+  goal_threshold: null as number | null,
+  goal_period: 'month' as string,
 };
 
 function money(amount: number) {
@@ -57,6 +64,7 @@ export default function ComisionesPage() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,10 +74,11 @@ export default function ComisionesPage() {
   const load = useCallback(async () => {
     if (!tenantId) return;
     setLoading(true);
-    const [{ data: rulesData }, { data: staffData }, { data: catsData }, { data: commissionsData }] = await Promise.all([
+    const [{ data: rulesData }, { data: staffData }, { data: catsData }, { data: productsData }, { data: commissionsData }] = await Promise.all([
       supabase.from('commission_rules').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false }),
       supabase.from('users').select('id, name, email').eq('tenant_id', tenantId).in('role', ['admin', 'moderator']),
       supabase.from('categories').select('id, name').eq('tenant_id', tenantId).order('name'),
+      supabase.from('products').select('id, name').eq('tenant_id', tenantId).eq('is_active', true).order('name'),
       supabase
         .from('order_commissions')
         .select('id, final_amount, created_at, orders(invoice_number), staff:staff_id(name, email)')
@@ -79,6 +88,7 @@ export default function ComisionesPage() {
     setRules(rulesData ?? []);
     setStaff(staffData ?? []);
     setCategories(catsData ?? []);
+    setProducts(productsData ?? []);
     setCommissions((commissionsData as any) ?? []);
     setLoading(false);
   }, [tenantId]);
@@ -89,6 +99,9 @@ export default function ComisionesPage() {
 
   const createRule = async () => {
     if (!newRule || !tenantId || !newRule.name.trim()) return;
+    if (newRule.scope_type === 'advisor' && !newRule.advisor_id) { alert('Elegí un asesor.'); return; }
+    if (newRule.scope_type === 'category' && !newRule.category_id) { alert('Elegí una categoría.'); return; }
+    if (newRule.scope_type === 'product' && !newRule.product_id) { alert('Elegí un producto.'); return; }
     setSaving(true);
     const specificity = newRule.scope_type === 'advisor' ? 3 : newRule.scope_type === 'product' ? 2 : newRule.scope_type === 'category' ? 1 : 0;
     const { data, error } = await supabase
@@ -136,9 +149,10 @@ export default function ComisionesPage() {
       </div>
 
       <div className="bg-gold-50 border border-gold-200 rounded-2xl p-4 text-xs text-gold-800">
-        Hoy el cálculo automático corre sobre reglas <strong>generales</strong> y <strong>por asesor específico</strong>,
-        aplicadas al total del pedido cuando se marca como pagado. Las reglas por producto o categoría quedan guardadas
-        como referencia para cuando sumemos el cálculo por línea de producto.
+        El cálculo corre solo cuando un pedido se marca como pagado. Las reglas <strong>por producto</strong> y{' '}
+        <strong>por categoría</strong> se aplican línea por línea; lo que no cubre ninguna de esas, se comisiona con la mejor
+        regla <strong>general</strong> o <strong>por asesor</strong>. Una regla con meta (opcional) solo se activa cuando el
+        asesor ya vendió el monto configurado en el período elegido.
       </div>
 
       {/* REGLAS */}
@@ -163,7 +177,14 @@ export default function ComisionesPage() {
                 <p className="text-xs text-ink-400">
                   {SCOPE_LABELS[rule.scope_type]} · {rule.rate_type === 'percentage' ? `${rule.rate_value}%` : money(rule.rate_value)}
                   {rule.scope_type === 'advisor' && staff.find((s) => s.id === rule.advisor_id) && ` · ${staff.find((s) => s.id === rule.advisor_id)?.name}`}
+                  {rule.scope_type === 'product' && products.find((p) => p.id === rule.product_id) && ` · ${products.find((p) => p.id === rule.product_id)?.name}`}
+                  {rule.scope_type === 'category' && categories.find((c) => c.id === rule.category_id) && ` · ${categories.find((c) => c.id === rule.category_id)?.name}`}
                 </p>
+                {rule.goal_threshold != null && (
+                  <p className="text-[11px] text-gold-700 font-semibold mt-0.5">
+                    Solo si el asesor vendió {money(rule.goal_threshold)} o más ({GOAL_PERIOD_LABELS[rule.goal_period ?? 'month'] ?? rule.goal_period} actual)
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -192,7 +213,7 @@ export default function ComisionesPage() {
               />
               <select
                 value={newRule.scope_type}
-                onChange={(e) => setNewRule({ ...newRule, scope_type: e.target.value as Rule['scope_type'], advisor_id: null, category_id: null })}
+                onChange={(e) => setNewRule({ ...newRule, scope_type: e.target.value as Rule['scope_type'], advisor_id: null, category_id: null, product_id: null })}
                 className="h-10 px-3 bg-white border border-ink-200 rounded-lg text-sm"
               >
                 {Object.entries(SCOPE_LABELS).map(([k, label]) => (
@@ -227,14 +248,27 @@ export default function ComisionesPage() {
               </select>
             )}
 
+            {newRule.scope_type === 'product' && (
+              <select
+                value={newRule.product_id ?? ''}
+                onChange={(e) => setNewRule({ ...newRule, product_id: e.target.value || null })}
+                className="w-full h-10 px-3 bg-white border border-ink-200 rounded-lg text-sm"
+              >
+                <option value="">Elegir producto...</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            )}
+
             <div className="grid sm:grid-cols-2 gap-3">
               <select
                 value={newRule.rate_type}
                 onChange={(e) => setNewRule({ ...newRule, rate_type: e.target.value as Rule['rate_type'] })}
                 className="h-10 px-3 bg-white border border-ink-200 rounded-lg text-sm"
               >
-                <option value="percentage">Porcentaje del total</option>
-                <option value="fixed">Monto fijo por pedido</option>
+                <option value="percentage">Porcentaje {newRule.scope_type === 'product' || newRule.scope_type === 'category' ? 'de la línea' : 'del total'}</option>
+                <option value="fixed">Monto fijo {newRule.scope_type === 'product' ? 'por unidad vendida' : 'por pedido'}</option>
               </select>
               <input
                 type="number"
@@ -244,6 +278,31 @@ export default function ComisionesPage() {
                 onChange={(e) => setNewRule({ ...newRule, rate_value: Number(e.target.value) })}
                 className="h-10 px-3 bg-white border border-ink-200 rounded-lg text-sm"
               />
+            </div>
+
+            <div className="border-t border-gold-200 pt-3 space-y-2">
+              <p className="text-[11px] font-bold text-ink-600 uppercase tracking-wider">Meta de venta (opcional)</p>
+              <p className="text-[11px] text-ink-500">Si la ponés, esta regla solo se aplica cuando el asesor ya vendió ese monto en el período elegido.</p>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Monto meta en CRC (dejar vacío = sin meta)"
+                  value={newRule.goal_threshold ?? ''}
+                  onChange={(e) => setNewRule({ ...newRule, goal_threshold: e.target.value === '' ? null : Number(e.target.value) })}
+                  className="h-10 px-3 bg-white border border-ink-200 rounded-lg text-sm"
+                />
+                <select
+                  value={newRule.goal_period}
+                  onChange={(e) => setNewRule({ ...newRule, goal_period: e.target.value })}
+                  disabled={newRule.goal_threshold == null}
+                  className="h-10 px-3 bg-white border border-ink-200 rounded-lg text-sm disabled:opacity-40"
+                >
+                  <option value="day">Por día</option>
+                  <option value="week">Por semana</option>
+                  <option value="month">Por mes</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex gap-2">

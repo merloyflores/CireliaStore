@@ -75,17 +75,17 @@ export default function Footer() {
             {(settings.instagram_url || settings.facebook_url || settings.tiktok_url) && (
               <div className="mt-5 flex items-center gap-3">
                 {settings.instagram_url && (
-                  <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center hover:bg-gold-600 hover:text-ink-950 transition-colors">
+                  <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center hover:bg-secondary-600 hover:text-cream-50 transition-colors">
                     <Instagram size={15} />
                   </a>
                 )}
                 {settings.facebook_url && (
-                  <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center hover:bg-gold-600 hover:text-ink-950 transition-colors">
+                  <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center hover:bg-secondary-600 hover:text-cream-50 transition-colors">
                     <Facebook size={15} />
                   </a>
                 )}
                 {settings.tiktok_url && (
-                  <a href={settings.tiktok_url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center hover:bg-gold-600 hover:text-ink-950 transition-colors text-[11px] font-black">
+                  <a href={settings.tiktok_url} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-ink-900 flex items-center justify-center hover:bg-secondary-600 hover:text-cream-50 transition-colors text-[11px] font-black">
                     TT
                   </a>
                 )}

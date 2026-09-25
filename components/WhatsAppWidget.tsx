@@ -6,12 +6,22 @@ import { X, Send, Sparkles } from 'lucide-react';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import { usePathname } from 'next/navigation';
 import { useTenantSettings } from '@/lib/useTenantSettings';
+import { isValidHex, generateShades } from '@/lib/themeColors';
 
 export default function WhatsAppWidget({ phoneNumber }: { phoneNumber?: string }) {
   const pathname = usePathname();
   const supabase = createClient();
   const { settings } = useTenantSettings();
   const resolvedPhone = phoneNumber || settings.whatsapp_number;
+  const wa = settings.whatsapp_config ?? {};
+  const isLeft = wa.position === 'left';
+  const greeting = wa.greeting || 'Estoy listo para ayudarte. Escribe tu consulta abajo.';
+  const buttonText = wa.button_text || '¿Dudas? Conversemos en vivo';
+  // Color propio (opcional): pisa el verde de siempre en el botón
+  // circular y la barra móvil, generando una pequeña rampa de tonos
+  // (igual que el color "Primario" de la tienda) para conservar el
+  // efecto degradado/hover en vez de quedar plano.
+  const shades = isValidHex(wa.color) ? generateShades(wa.color) : null;
 
   const [isOpen, setIsOpen] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false); // Nuevo estado para ocultar el widget por completo
@@ -52,14 +62,22 @@ export default function WhatsAppWidget({ phoneNumber }: { phoneNumber?: string }
   };
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:sticky sm:bottom-6 sm:left-auto sm:right-auto z-999 flex justify-center sm:justify-end sm:mr-10 pointer-events-none">
-      
-      {/* 1. VENTANA DE CHAT: Ajustada para centrarse perfectamente en móviles y alinearse a la derecha en PC */}
+    <div
+      className={`fixed bottom-4 left-4 right-4 sm:sticky sm:bottom-6 z-999 flex justify-center pointer-events-none ${
+        isLeft ? 'sm:justify-start sm:ml-10 sm:left-auto sm:right-auto' : 'sm:justify-end sm:mr-10 sm:left-auto sm:right-auto'
+      }`}
+    >
+
+      {/* 1. VENTANA DE CHAT: centrada en móviles, alineada al lado elegido en PC */}
       {isOpen && (
-        <div className="absolute bottom-20 left-0 right-0 mx-auto sm:mx-0 sm:left-auto sm:right-0 w-[calc(100vw-2rem)] sm:w-85 pointer-events-auto bg-cream-50 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-ink-100 overflow-hidden animate-in fade-in slide-in-from-bottom-5">
+        <div
+          className={`absolute bottom-20 left-0 right-0 mx-auto sm:mx-0 w-[calc(100vw-2rem)] sm:w-85 pointer-events-auto bg-cream-50 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-ink-100 overflow-hidden animate-in fade-in slide-in-from-bottom-5 ${
+            isLeft ? 'sm:right-auto sm:left-0' : 'sm:left-auto sm:right-0'
+          }`}
+        >
           <div className="bg-ink-950 p-6 text-cream-50 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center relative">
+              <div className="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center relative" style={shades ? { backgroundColor: shades[500] } : undefined}>
                 <WhatsAppIcon style={{ fontSize: 24 }} />
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-ink-950 rounded-full"></span>
               </div>
@@ -95,7 +113,7 @@ export default function WhatsAppWidget({ phoneNumber }: { phoneNumber?: string }
                       <Sparkles size={12} className="text-emerald-600" />
                     </div>
                     <div className="bg-ink-100 p-3 rounded-2xl rounded-tl-none text-[11px] text-ink-700 max-w-[85%] shadow-sm">
-                      Hola {name}! 👋 Estoy listo para ayudarte. Escribe tu consulta abajo.
+                      Hola {name}! 👋 {greeting}
                     </div>
                   </div>
                   <div className="flex gap-1 pl-8">
@@ -110,7 +128,11 @@ export default function WhatsAppWidget({ phoneNumber }: { phoneNumber?: string }
                     type="text" required placeholder="Escribe tu duda..." value={message} onChange={(e) => setMessage(e.target.value)} 
                     className="flex-1 bg-transparent px-3 text-xs outline-none" 
                   />
-                  <button type="submit" className="w-9 h-9 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl flex items-center justify-center transition-transform hover:scale-105">
+                  <button
+                    type="submit"
+                    className="w-9 h-9 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl flex items-center justify-center transition-transform hover:scale-105"
+                    style={shades ? { backgroundColor: shades[500] } : undefined}
+                  >
                     <Send size={14} />
                   </button>
                 </form>
@@ -125,7 +147,10 @@ export default function WhatsAppWidget({ phoneNumber }: { phoneNumber?: string }
           ======================================================= */}
 
       {/* MÓVIL: Estilo Barra de Footer Flotante Alargada (Silueta image_e2a134.png con Efecto 3D Premium) */}
-      <div className="sm:hidden pointer-events-auto flex items-center justify-between bg-linear-to-b from-emerald-400 via-emerald-500 to-emerald-600 text-white w-full max-w-md h-12 rounded-full pl-4 pr-2 border border-emerald-600/70 transition-all shadow-[0_12px_32px_rgba(16,185,129,0.45),inset_0_2px_3px_rgba(255,255,255,0.35),inset_0_-2px_3px_rgba(0,0,0,0.15)] backdrop-blur-xs">
+      <div
+        className="sm:hidden pointer-events-auto flex items-center justify-between bg-linear-to-b from-emerald-400 via-emerald-500 to-emerald-600 text-white w-full max-w-md h-12 rounded-full pl-4 pr-2 border border-emerald-600/70 transition-all shadow-[0_12px_32px_rgba(16,185,129,0.45),inset_0_2px_3px_rgba(255,255,255,0.35),inset_0_-2px_3px_rgba(0,0,0,0.15)] backdrop-blur-xs"
+        style={shades ? { backgroundImage: `linear-gradient(to bottom, ${shades[400]}, ${shades[500]}, ${shades[600]})`, borderColor: `${shades[600]}b3` } : undefined}
+      >
         
         {/* Gatillo de apertura y frase de marketing */}
         <button 
@@ -144,7 +169,7 @@ export default function WhatsAppWidget({ phoneNumber }: { phoneNumber?: string }
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
           </svg>
           <span className="text-xs font-black uppercase tracking-wider text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.15)]">
-            {isOpen ? 'Cerrar consulta' : '¿Dudas? Conversemos en vivo'}
+            {isOpen ? 'Cerrar consulta' : buttonText}
           </span>
         </button>
 
@@ -162,9 +187,13 @@ export default function WhatsAppWidget({ phoneNumber }: { phoneNumber?: string }
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="hidden sm:flex pointer-events-auto relative w-16 h-16 rounded-full items-center justify-center text-white shadow-[0_4px_20px_rgba(16,185,129,0.3)] transition-all hover:scale-105 active:scale-95 bg-emerald-500 z-10"
+        style={shades ? { backgroundColor: shades[500] } : undefined}
       >
         {!isOpen && (
-          <span className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-50 -z-10"></span>
+          <span
+            className="absolute inset-0 rounded-full bg-emerald-500 animate-ping opacity-50 -z-10"
+            style={shades ? { backgroundColor: shades[500] } : undefined}
+          ></span>
         )}
         
         <div className="relative z-10 transition-transform duration-300">

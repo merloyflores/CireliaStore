@@ -14,6 +14,25 @@
   --color-cream-200: #f3ebda;
   --color-cream-300: #e8dbc0;
   --color-cream-400: #dcc9a3;
+  --color-cream-500: #c9b078;
+  --color-cream-600: #a88f57;
+  --color-cream-700: #86713f;
+  --color-cream-800: #67562f;
+  --color-cream-900: #4c3f22;
+  --color-cream-950: #322917;
+
+  /* Secundario: acento complementario al dorado (botones/CTAs "ghost", etc). */
+  --color-secondary-50: #f2f8f7;
+  --color-secondary-100: #e2eeed;
+  --color-secondary-200: #bedad7;
+  --color-secondary-300: #9ac6c1;
+  --color-secondary-400: #7db5af;
+  --color-secondary-500: #63a69f;
+  --color-secondary-600: #508c85;
+  --color-secondary-700: #41726c;
+  --color-secondary-800: #325854;
+  --color-secondary-900: #25413e;
+  --color-secondary-950: #182a28;
 
   /* Dorado: acento de marca. Úsalo con cuidado — es acento, no relleno. */
   --color-gold-50: #fbf6ec;
